@@ -1,0 +1,8 @@
+-------------------- Besme allah Rahman Rahim ---------------------
+
+Impression
+===================================================================
+• None of ur business
+  
+for install just run follow command in terminal:
+autoreconf -i;./configure;make;sudo make install
