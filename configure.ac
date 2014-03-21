@@ -3,7 +3,7 @@
 AC_PREREQ([2.63])
 
 #create info about project
-AC_INIT([Ijadi],[0.1], , Ijadi)
+AC_INIT([OpenCV],[0.01], , opencv)
 
 #foreign use to break the gnu strict
 AM_INIT_AUTOMAKE([foreign dist-bzip2])
@@ -19,19 +19,15 @@ AC_PROG_LIBTOOL
 AC_PROG_CC
 AC_PROG_CXX
 
-PKG_CHECK_MODULES([GTK], [gtk+-3.0  >= 3.2.0])
-PKG_CHECK_MODULES([CAIRO], [cairo >= 1.0.0])
-PKG_CHECK_MODULES([GDK], [gdk-3.0 >= 2.91.7])
-PKG_CHECK_MODULES([LIBANJUTA],[libanjuta-3.0])
+PKG_CHECK_MODULES([OPENCV], [opencv  >= 0.25])
 #force to less verbose build output
 AM_SILENT_RULES([yes])
 
 AC_CONFIG_FILES([
 	Makefile
 	Source/Makefile
-  Resources/Makefile
-  Resources/UI/Makefile
-  Script/Makefile
+	Resources/Makefile
+	Script/Makefile
 ])
 
 AC_OUTPUT
