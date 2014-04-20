@@ -19,6 +19,7 @@ AC_PROG_LIBTOOL
 AC_PROG_CC
 AC_PROG_CXX
 
+PKG_CHECK_MODULES([GTK], [gtk+-3.0  >= 3.2.0])
 PKG_CHECK_MODULES([OPENCV], [opencv  >= 0.25])
 #force to less verbose build output
 AM_SILENT_RULES([yes])

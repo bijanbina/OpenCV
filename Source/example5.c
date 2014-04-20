@@ -10,7 +10,7 @@ IplImage* doCanny( IplImage* in, double lowThresh, double highThresh, double ape
 {
     if(in->nChannels != 1)
     {
-        printf("fuck you\n");
+        printf("Not supported\n");
         return(0); //Canny only handles gray scale images
     }
     IplImage* out = cvCreateImage( cvGetSize( in ) , IPL_DEPTH_8U, 1 );
@@ -47,7 +47,7 @@ void onTrackbarSlide(int pos)
     cvReleaseImage( &out );
 }
 
-void example2_4( )
+void example2_4( IplImage *input )
 {
 // Create some windows to show the input
 // and output images in.
@@ -55,7 +55,7 @@ void example2_4( )
     cvNamedWindow( "Example4-out" , CV_WINDOW_AUTOSIZE );
 // Create a window to show our input image
 //
-    cvShowImage( "Example4-in", image );
+    cvShowImage( "Example4-in", input );
 // Create an image to hold the smoothed output
 //
 cvCreateTrackbar( "Position", "Example4-in", &g_slider_position, 96,
@@ -80,5 +80,6 @@ cvCreateTrackbar( "Position", "Example4-in", &g_slider_position, 96,
 int main( int argc, char** argv )
 {
     image = cvLoadImage( argv[1] , CV_LOAD_IMAGE_GRAYSCALE );
-    example2_4();
+    IplImage *in = cvLoadImage( argv[1] , CV_LOAD_IMAGE_COLOR );
+    example2_4( in );
 }

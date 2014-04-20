@@ -5,8 +5,8 @@ INCLUDES =	-DIJADI_RESOURCES=\"$(datadir)/ijadi/Resources\" \
 
 bin_PROGRAMS = CVTest
 
-CVTest_SOURCES = main.c
+CVTest_SOURCES = example6.c
 
-CVTest_CFLAGS = $(OPENCV_CFLAGS)
+CVTest_CFLAGS = $(OPENCV_CFLAGS) $(GTK_CFLAGS)
 
-CVTest_LDFLAGS = $(OPENCV_LIBS)
+CVTest_LDFLAGS = $(OPENCV_LIBS) $(GTK_LIBS)
