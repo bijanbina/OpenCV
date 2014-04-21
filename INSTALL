@@ -6,7 +6,7 @@ Basic Installation (Ubuntu)
 Installation
 =======================================================================================================================
 1. install dependensies
-2. ./configure
-3. make
+2. qmake -o Makefile openCV.pro > /dev/null
+3. make -s
 4. make insyall
 

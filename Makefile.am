@@ -1,1 +1,0 @@
-SUBDIRS = Source Resources Script
