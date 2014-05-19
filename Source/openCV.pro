@@ -18,3 +18,5 @@ HEADERS  += mainwindow.h
 
 PKGCONFIG += opencv
 CONFIG += link_pkgconfig
+QMAKE_CXXFLAGS += -g
+#QMAKE_CXXFLAGS += -E

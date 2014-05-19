@@ -13,11 +13,18 @@ public:
     ~MainWindow();
 
 protected:
-    char*     FileOpName; //declare FileOpName as IplImage
-    IplImage*   imagerd; //declare imagerd as IplImage
+    char        *FileOpName; //declare FileOpName as IplImage
+    IplImage    *imagerd;    //declare imagerd as IplImage
 
 private slots:
-    void slider_change(int);
+    void slider1_change(int);
+    void slider2_change(int);
+    void slider3_change(int);
+    void slider4_change(int);
+    void chk1_change(int);
+    void chk2_change(int);
+    void open_clicked();
+	void state_change(int is_radio = 0);
 
 private:
     void CreateLayout();
@@ -26,6 +33,8 @@ private:
     IplImage* doPyrDown( IplImage* in, int filter);
 
     QLabel       *surface;
+	QCheckBox    *chk1;
+	QCheckBox    *chk2;
     IplImage     *image;
     QImage        imageView;
     QVBoxLayout  *main_layout;
@@ -33,6 +42,31 @@ private:
     QLabel       *slider1_label;
     QWidget      *Main_Widget;
     QSlider      *slider1;
+    QSlider      *slider2;
+    QHBoxLayout  *slider2_layout;
+    QLabel       *slider2_label;
+    QSlider      *vslider1;
+    QVBoxLayout  *vslider1_layout;
+    QLabel       *vslider1_label;
+    QSlider      *vslider2;
+    QVBoxLayout  *vslider2_layout;
+    QLabel       *vslider2_label;
+    QHBoxLayout  *surface_layout;
+    QHBoxLayout  *radio_layout;
+	QRadioButton *radio_1;
+	QRadioButton *radio_2;
+	QRadioButton *radio_3;
+	QRadioButton *radio_4;
+    QHBoxLayout  *button_layout;
+    QPushButton  *open_btn;
+    QPushButton  *save_btn;
+    double        treshold_1;
+    double        treshold_2;
+    double        treshold_3;
+    double        treshold_4;
+    char		 *file_name;
+	int           chk1_state;
+	int           chk2_state;
 };
 
 

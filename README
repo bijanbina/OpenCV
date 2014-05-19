@@ -6,3 +6,8 @@ Impression
   
 for install just run follow command in terminal:
 autoreconf -i;./configure;make;sudo make install
+
+Contribute
+===================================================================
+git commit -a -m "Erode and Dilute added";git push -u origin master
+
