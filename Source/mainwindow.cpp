@@ -435,14 +435,34 @@ void MainWindow::CreateLayout()
     save_btn = new QPushButton("Save");
 	button_layout->addWidget(open_btn);
 	button_layout->addWidget(save_btn);
+	//Options
+	radioa1 = new QRadioButton("Null");
+	radioa2 = new QRadioButton("Null");
+	radioa3 = new QRadioButton("Null");
+	radioa4 = new QRadioButton("Null");
+	radio2_layout = new QHBoxLayout;	
+	surface2_layout = new QVBoxLayout;
+	option_layout = new QHBoxLayout;
+    chkbox_layout = new QHBoxLayout;
+    radio1_groupbox = new QGroupBox;
+    radio1_groupbox->setAlignment(Qt::AlignLeft);
+    radio1_groupbox->setStyleSheet("QGroupBox::title { left = -2 ;border: 0px ;  border-radius: 0px; padding: 0px 0px 0px 0px; margin = 0px 0px 0px 0px } QGroupBox {  border: 0px ;  border-radius: 0px; padding: 0px 0px 0px 0px;} ");
+	radio2_layout->addWidget(radioa1);
+	radio2_layout->addWidget(radioa2);
+	radio2_layout->addWidget(radioa3);
+	radio2_layout->addWidget(radioa4);
+    radio1_groupbox->setLayout(radio2_layout);
+    option_layout->addWidget(radio1_groupbox);
+    surface2_layout->addLayout(option_layout);
     //Start making layout
     main_layout->addLayout(slider1_layout);
     main_layout->addLayout(slider2_layout);
     main_layout->addLayout(radio_layout);
+    main_layout->addLayout(surface2_layout);
     main_layout->addLayout(surface_layout);
     main_layout->addLayout(button_layout);
     //Side object
-    file_name = "/home/bijan/Pictures/Bijan/ArchitectureBanner-1.jpg";
+    file_name = "/home/bijan/Pictures/test.jpg";
     chk1_state = 0;
     chk2_state = 0;
 	treshold_1 = 0;
