@@ -12,9 +12,11 @@ TARGET = openCV
 
 
 SOURCES += main.cpp\
-        mainwindow.cpp
+        mainwindow.cpp\
+	calibratewindow.cpp
 
-HEADERS  += mainwindow.h
+HEADERS  += mainwindow.h\
+	calibratewindow.h
 
 PKGCONFIG += opencv
 CONFIG += link_pkgconfig
