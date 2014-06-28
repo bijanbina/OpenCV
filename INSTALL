@@ -8,5 +8,5 @@ Installation
 1. install dependensies
 2. qmake -o Makefile openCV.pro > /dev/null
 3. make -s
-4. make insyall
+4. make install
 

@@ -28,15 +28,31 @@ private slots:
     void calibrate_clicked();
 	void state_change(int is_radio = 0);
 
+
 private:
     void CreateLayout();
+    void CreateMenu();
     void openImage();
+    void find_corner(IplImage* in ,double quality_level ,double min_distance ,int MAX_CORNERS , double k) ;
+    void MyFilledCircle( cv::Mat img, cv::Point center );
     IplImage* doCanny( IplImage* in, double lowThresh, double highThresh, double aperture );
     IplImage* doPyrDown( IplImage* in, int filter);
 
     QLabel       *surface;
 	QCheckBox    *chk1;
 	QCheckBox    *chk2;
+    QMenuBar     *menu;
+    QMenu        *file_menu;
+    QMenu		 *mode_menu;
+    QMenu		 *help_menu;
+    QAction		 *a_open;
+    QAction		 *a_save;
+    QAction		 *a_edgeDetection;
+    QAction		 *a_dilute;
+    QAction		 *a_erode;
+    QAction		 *a_mix;
+    QAction		 *a_corner;
+    QAction		 *a_about;
     IplImage     *image;
     QImage        imageView;
     QVBoxLayout  *main_layout;

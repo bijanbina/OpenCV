@@ -4,6 +4,7 @@ CalibrateWindow::CalibrateWindow(QWidget *parent) :
     QMainWindow(parent)
 {
     CreateLayout();
+    CreateMenu();
 	QSignalMapper* signalMapper = new QSignalMapper (this) ;
 
     connect(slider1,SIGNAL(valueChanged(int)), this, SLOT(slider1_change(int)));
@@ -93,7 +94,7 @@ void CalibrateWindow::state_change(int is_radio)
 				}
 				else
 				{
-            		imageView = QImage((const unsigned char*)(imagerd->imageData), imagerd->width,imagerd->height,QImage::Format_RGB888).rgbSwapped();
+                    imageView = QImage((const unsigned char*)(imagerd->imageData), imagerd->width,imagerd->height,QImage::Format_RGB888).rgbSwapped();
             		surface->setPixmap(QPixmap::fromImage(imageView));
 				}
         	}
@@ -112,10 +113,7 @@ void CalibrateWindow::state_change(int is_radio)
 				}
 				else
 				{
-            		IplImage* out = doCanny( image, treshold_1 ,treshold_2, 3 );
-            		imageView = QImage((const unsigned char*)(out->imageData), out->width,out->height,QImage::Format_Indexed8).rgbSwapped();
-            		surface->setPixmap(QPixmap::fromImage(imageView));
-            		cvReleaseImage( &out );
+                    calibrate_clicked();
 				}
         	}
 			chk1->setText("Proportion 3");
@@ -381,11 +379,12 @@ void CalibrateWindow::save_clicked()
 
 void CalibrateWindow::calibrate_clicked()
 {
-    file_name = QFileDialog::getOpenFileName(this, "Open File", "","Images (*.png *.jpg)").toLocal8Bit().data();
-    if (strcmp(file_name,""))
-    {
-		openImage();
-	}
+    double quality_level = treshold_1/1000.0;
+    double min_distance = treshold_3/10.0;
+    int maxCorner = 100;
+    double k = treshold_2/100.0;
+    IplImage* input=cvCloneImage(image);
+    find_corner(input,quality_level,min_distance,maxCorner,k);
 }
 
 void CalibrateWindow::open_clicked()
@@ -393,8 +392,28 @@ void CalibrateWindow::open_clicked()
     file_name = QFileDialog::getOpenFileName(this, "Open File", "","Images (*.png *.jpg)").toLocal8Bit().data();
     if (strcmp(file_name,""))
     {
-		openImage();
+        openImage();
 	}
+}
+
+
+void CalibrateWindow::CreateMenu()
+{
+    menu = new QMenuBar (this);
+    setMenuBar(menu);
+
+    file_menu = menu->addMenu("File");
+    a_open = file_menu->addAction("Open");
+    a_save = file_menu->addAction("Save");
+    mode_menu = menu->addMenu("Mode");
+    a_edgeDetection = mode_menu->addAction("Edge Detection");
+    a_dilute = mode_menu->addAction("Dilute");
+    a_erode = mode_menu->addAction("Erode");
+    a_mix = mode_menu->addAction("Erode & Dilute");
+    a_corner = mode_menu->addAction("Corner Detection");
+
+    help_menu = menu->addMenu("Help");
+    a_about = help_menu->addAction("About");
 }
 
 void CalibrateWindow::CreateLayout()
@@ -423,14 +442,14 @@ void CalibrateWindow::CreateLayout()
     vslider1_layout = new QVBoxLayout;
     vslider1_label = new QLabel("value = 0");
     vslider1 = new QSlider();
-    vslider1->setMaximum(30);
+    vslider1->setMaximum(300);
     vslider1_layout->addWidget(vslider1);
     vslider1_layout->addWidget(vslider1_label);
 
     vslider2_layout = new QVBoxLayout;
     vslider2_label = new QLabel("value = 0");
     vslider2 = new QSlider();
-    vslider2->setMaximum(30);
+    vslider2->setMaximum(300);
     vslider2_layout->addWidget(vslider2);
     vslider2_layout->addWidget(vslider2_label);
 
@@ -452,8 +471,10 @@ void CalibrateWindow::CreateLayout()
     //Button
 	button_layout = new QHBoxLayout;
     open_btn = new QPushButton("Open");
+    calibrate_btn = new QPushButton("Calibrate");
     save_btn = new QPushButton("Save");
 	button_layout->addWidget(open_btn);
+    button_layout->addWidget(calibrate_btn);
 	button_layout->addWidget(save_btn);
 	//Options
 	radioa1 = new QRadioButton("Null");
@@ -521,3 +542,28 @@ IplImage* CalibrateWindow::doPyrDown( IplImage* in, int filter)
     cvPyrDown( in, out , CV_GAUSSIAN_5x5);
     return( out );
 };
+
+void CalibrateWindow::MyFilledCircle( cv::Mat img, cv::Point center )
+{
+ int thickness = 3;
+ int lineType = 8;
+
+ cv::circle( img, center, 10.0, 255, thickness, lineType );
+}
+
+
+void CalibrateWindow::find_corner(IplImage* in ,double quality_level ,double min_distance ,int MAX_CORNERS , double k )
+{
+
+    cv::Mat grayFrame;
+    std::vector<cv::Point2f> corners;
+    grayFrame = cv::Mat(in);
+    cv::goodFeaturesToTrack(grayFrame, corners, MAX_CORNERS, quality_level,  min_distance ,cv::noArray() ,10,false,k);
+    for (int i = 0 ; i < MAX_CORNERS ; i++)
+    {
+        MyFilledCircle(grayFrame,corners[i]);
+    }
+    IplImage out = grayFrame;
+    imageView = QImage((const unsigned char*)(out.imageData), out.width,out.height,QImage::Format_Indexed8).rgbSwapped();
+    surface->setPixmap(QPixmap::fromImage(imageView));
+}
