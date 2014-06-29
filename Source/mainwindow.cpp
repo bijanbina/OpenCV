@@ -15,12 +15,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow()
 {
-    if (image != NULL)
-    {
-        cvReleaseImage(&image);
-    }
-    delete   main_layout;
-    delete   Main_Widget;
 }
 
 //Open image function call

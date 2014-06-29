@@ -49,7 +49,6 @@ private:
     QHBoxLayout     *preview_layout;
 	QCheckBox    	*chk1;
 	QCheckBox    	*chk2;
-    IplImage     	*image;
 	QMenuBar		*menu;
 	QMenu			*file_menu;
 	QMenu			*option_menu;
@@ -97,6 +96,7 @@ private:
     QwtPlotZoomer   *xt_zoomer;
     QwtPlotZoomer   *yt_zoomer;
     QwtPlotZoomer   *vt_zoomer;
+    IplImage     	*image;
     double        	treshold_1;
     double        	treshold_2;
     double        	erode_count;

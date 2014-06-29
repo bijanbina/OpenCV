@@ -33,27 +33,6 @@ CalibrateWindow::CalibrateWindow(QWidget *parent) :
 
 CalibrateWindow::~CalibrateWindow()
 {
-    delete   surface;
-    if (image != NULL)
-    {
-        cvReleaseImage(&image);
-    }
-    delete   slider1_label;
-    delete   slider1;
-    delete   slider2;
-    delete   slider2_label;
-    delete   vslider1;
-    delete   vslider1_label;
-    delete   vslider2;
-    delete   vslider2_label;
-    delete   open_btn;
-    delete   slider2_layout;
-    delete   vslider1_layout;
-    delete   vslider2_layout;
-    delete   slider1_layout;
-    delete   surface_layout;
-    delete   main_layout;
-    delete   Main_Widget;
 }
 
 //Open image function call
