@@ -4,7 +4,13 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent)
 {
     CreateLayout();
-
+	
+	//Actions
+    connect(a_open, SIGNAL(triggered(bool)),this,SLOT(open_clicked()));
+    connect(a_save, SIGNAL(triggered(bool)),this,SLOT(save_clicked()));
+    connect(a_exit, SIGNAL(triggered(bool)),this,SLOT(exit_clicked()));
+    connect(a_calibrate, SIGNAL(triggered(bool)),this,SLOT(calibrate_clicked()));
+	//Buttons
     connect(open_btn, SIGNAL(released()), this, SLOT(open_clicked()));
     connect(analysis_btn, SIGNAL(released()), this, SLOT(analysis_clicked()));
     connect(save_btn, SIGNAL(released()), this, SLOT(save_clicked()));
@@ -23,6 +29,11 @@ void MainWindow::openImage()
     imagerd = cvLoadImage(file_name);
     imageView = QImage((const unsigned char*)(imagerd->imageData), imagerd->width,imagerd->height,QImage::Format_RGB888).rgbSwapped();
     preview->setPixmap(QPixmap::fromImage(imageView));
+}
+
+void MainWindow::exit_clicked()
+{
+	close();
 }
 
 void MainWindow::save_clicked()
@@ -213,6 +224,13 @@ void MainWindow::CreateLayout()
     Main_Widget->setLayout(main_layout);
     setWindowTitle(trUtf8("Tremor"));
     setCentralWidget(Main_Widget);
+    setGeometry(
+        QStyle::alignedRect(
+            Qt::LeftToRight,
+            Qt::AlignCenter,
+            size(),
+            qApp->desktop()->availableGeometry()
+        ));
     //setLayoutDirection(Qt::RightToLeft);
 }
 

@@ -21,8 +21,7 @@ HEADERS  += mainwindow.h\
 PKGCONFIG += opencv
 CONFIG += link_pkgconfig
 
-INCLUDEPATH      = /usr/share/qwt-6.1.1-svn/include
-LIBS        *= -L/usr/share/qwt-6.1.1-svn/lib
+INCLUDEPATH      = /usr/include/qwt
 LIBS        += -lqwt
 QMAKE_CXXFLAGS += -g
 #QMAKE_CXXFLAGS += -E

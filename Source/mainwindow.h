@@ -36,6 +36,7 @@ private slots:
     void calibrate_clicked();
     void analysis_clicked();
     void save_clicked();
+    void exit_clicked();
 
 private:
     void CreateLayout();

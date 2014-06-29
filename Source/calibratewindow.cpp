@@ -16,17 +16,12 @@ CalibrateWindow::CalibrateWindow(QWidget *parent) :
     connect(open_btn, SIGNAL(released()), this, SLOT(open_clicked()));
     connect(save_btn, SIGNAL(released()), this, SLOT(save_clicked()));
     connect(calibrate_btn, SIGNAL(released()), this, SLOT(calibrate_clicked()));
-	connect(radio_1,SIGNAL(clicked()),signalMapper,SLOT(map()));
-	connect(radio_2,SIGNAL(clicked()),signalMapper,SLOT(map()));
-	connect(radio_3,SIGNAL(clicked()),signalMapper,SLOT(map()));
-	connect(radio_4,SIGNAL(clicked()),signalMapper,SLOT(map()));
 
-	signalMapper -> setMapping (radio_1, 1) ;
-	signalMapper -> setMapping (radio_2, 1) ;
-	signalMapper -> setMapping (radio_3, 1) ;
-	signalMapper -> setMapping (radio_4, 1) ;
-
-	connect (signalMapper, SIGNAL(mapped(int)), this, SLOT(state_change(int))) ;
+    connect(a_corner, SIGNAL(triggered(bool)),this,SLOT(cornerdetect_clicked(bool)));
+    connect(a_edge, SIGNAL(triggered(bool)),this,SLOT(edgedetect_clicked(bool)));
+    connect(a_erode, SIGNAL(triggered(bool)),this,SLOT(erode_clicked(bool)));
+    connect(a_dilute, SIGNAL(triggered(bool)),this,SLOT(dilute_clicked(bool)));
+    connect(a_mix, SIGNAL(triggered(bool)),this,SLOT(mix_clicked(bool)));
 
     openImage();
 }
@@ -43,9 +38,9 @@ void CalibrateWindow::openImage()
 	state_change();
 }
 
-void CalibrateWindow::state_change(int is_radio)
+void CalibrateWindow::state_change(int changed)
 {
-	if (is_radio)
+    if (changed)
 	{
 		chk1->setChecked(false);
 		chk2->setChecked(false);
@@ -56,7 +51,7 @@ void CalibrateWindow::state_change(int is_radio)
         vslider1->setValue(0);
         vslider2->setValue(0);
 	}
-	if (radio_1->isChecked())
+    if (a_edge->isChecked())
 	{
     	if (image != NULL)
     	{
@@ -91,8 +86,11 @@ void CalibrateWindow::state_change(int is_radio)
             		cvReleaseImage( &out );
 				}
 				else
-				{
-                    calibrate_clicked();
+                {
+                    IplImage* out = doCanny( image, treshold_1 ,treshold_2, 3 );
+                    imageView = QImage((const unsigned char*)(out->imageData), out->width,out->height,QImage::Format_Indexed8).rgbSwapped();
+                    surface->setPixmap(QPixmap::fromImage(imageView));
+                    cvReleaseImage( &out );
 				}
         	}
 			chk1->setText("Proportion 3");
@@ -101,7 +99,7 @@ void CalibrateWindow::state_change(int is_radio)
 		slider1->setMaximum(1000);
 		slider2->setMaximum(1000);
 	}
-	else if (radio_2->isChecked())
+    else if (a_erode->isChecked())
 	{
     	if (image != NULL)
     	{
@@ -124,7 +122,7 @@ void CalibrateWindow::state_change(int is_radio)
 		slider1->setMaximum(30);
 		slider2->setMaximum(30);
 	}
-	else if (radio_3->isChecked())
+    else if (a_dilute->isChecked())
 	{
 		if (image != NULL)
     	{
@@ -147,7 +145,7 @@ void CalibrateWindow::state_change(int is_radio)
 		slider1->setMaximum(30);
 		slider2->setMaximum(30);
 	}
-	else if (radio_4->isChecked())
+    else if (a_mix->isChecked())
 	{
 		if (image != NULL)
     	{
@@ -178,7 +176,28 @@ void CalibrateWindow::state_change(int is_radio)
 		chk2->setText("Dilute=Erode");
 		slider1->setMaximum(30);
 		slider2->setMaximum(30);
-	}
+    }
+    else if (a_corner->isChecked())
+    {
+        if (image != NULL)
+        {
+            if (treshold_1 == 0 && treshold_2 == 0 )
+            {
+                imageView = QImage((const unsigned char*)(imagerd->imageData), imagerd->width,imagerd->height,QImage::Format_RGB888).rgbSwapped();
+                surface->setPixmap(QPixmap::fromImage(imageView));
+            }
+            else
+            {
+                calibrate_clicked();
+            }
+        }
+        chk1->setText("NULL");
+        chk2->setText("NULL");
+        slider1->setMaximum(900);
+        slider2->setMaximum(900);
+        vslider1->setMaximum(300);
+        vslider2->setEnabled(false);
+    }
 	else
 	{
 		;
@@ -189,19 +208,19 @@ void CalibrateWindow::slider1_change(int value)
     treshold_1 = value;
     if (chk1_state)
     {
-		if (radio_1->isChecked())
+        if (a_edge->isChecked())
 		{
         	slider2->setValue(value/3);
 		}
-		else if (radio_2->isChecked())
+        else if (a_erode->isChecked())
 		{
         	;
 		}
-		else if (radio_3->isChecked())
+        else if (a_dilute->isChecked())
 		{
 			;
 		}
-		else if (radio_4->isChecked())
+        else if (a_mix->isChecked())
 		{
         	;
 		}
@@ -212,19 +231,19 @@ void CalibrateWindow::slider1_change(int value)
     }
     if (chk2_state)
     {
-		if (radio_1->isChecked())
+        if (a_edge->isChecked())
 		{
         	;
 		}
-		else if (radio_2->isChecked())
+        else if (a_erode->isChecked())
 		{
         	;
 		}
-		else if (radio_3->isChecked())
+        else if (a_dilute->isChecked())
 		{
 			;
 		}
-		else if (radio_4->isChecked())
+        else if (a_mix->isChecked())
 		{
         	slider2->setValue(value);
 		}
@@ -264,39 +283,39 @@ void CalibrateWindow::chk1_change(int value)
     chk1_state = value;
     if (chk1_state)
     {
-		if (radio_1->isChecked())
+        if (a_edge->isChecked())
         {
 			slider2->setValue(slider1->value()/3);
         	slider2->setEnabled(!chk1_state);
 		}
-		else if (radio_2->isChecked())
+        else if (a_erode->isChecked())
 		{
 			;
 		}
-		else if (radio_3->isChecked())
+        else if (a_dilute->isChecked())
 		{
 			;
 		}
-		else if (radio_4->isChecked())
+        else if (a_mix->isChecked())
 		{
 			state_change();
 		}
     }
 	else
 	{
-		if (radio_1->isChecked())
+        if (a_edge->isChecked())
         {
         	slider2->setEnabled(!chk1_state);
 		}
-		else if (radio_2->isChecked())
+        else if (a_erode->isChecked())
 		{
 			;
 		}
-		else if (radio_3->isChecked())
+        else if (a_dilute->isChecked())
 		{
 			;
 		}
-		else if (radio_4->isChecked())
+        else if (a_mix->isChecked())
 		{
 			state_change();
 		}
@@ -308,19 +327,19 @@ void CalibrateWindow::chk2_change(int value)
     chk2_state = value;
     if (chk2_state)
     {
-		if (radio_1->isChecked())
+        if (a_edge->isChecked())
         {
 			state_change();
 		}
-		else if (radio_2->isChecked())
+        else if (a_erode->isChecked())
 		{
 			;
 		}
-		else if (radio_3->isChecked())
+        else if (a_dilute->isChecked())
 		{
 			;
 		}
-		else if (radio_4->isChecked())
+        else if (a_mix->isChecked())
 		{
 			slider2->setValue(slider1->value());
         	slider2->setEnabled(!chk2_state);
@@ -328,19 +347,19 @@ void CalibrateWindow::chk2_change(int value)
 	}
 	else
 	{
-		if (radio_1->isChecked())
+        if (a_edge->isChecked())
         {
         	state_change();
 		}
-		else if (radio_2->isChecked())
+        else if (a_erode->isChecked())
 		{
 			;
 		}
-		else if (radio_3->isChecked())
+        else if (a_dilute->isChecked())
 		{
 			;
 		}
-		else if (radio_4->isChecked())
+        else if (a_mix->isChecked())
 		{
 			slider2->setEnabled(!chk2_state);	
 		}
@@ -375,6 +394,85 @@ void CalibrateWindow::open_clicked()
 	}
 }
 
+void CalibrateWindow::cornerdetect_clicked(bool state)
+{
+    if (state)
+    {
+        a_edge->setChecked(false);
+        a_erode->setChecked(false);
+        a_dilute->setChecked(false);
+        a_mix->setChecked(false);
+        state_change(1);
+    }
+    else
+    {
+        a_corner->setChecked(true);
+    }
+}
+
+void CalibrateWindow::edgedetect_clicked(bool state)
+{
+    if (state)
+    {
+        a_corner->setChecked(false);
+        a_erode->setChecked(false);
+        a_dilute->setChecked(false);
+        a_mix->setChecked(false);
+        state_change(1);
+    }
+    else
+    {
+        a_edge->setChecked(true);
+    }
+}
+
+void CalibrateWindow::erode_clicked(bool state)
+{
+    if (state)
+    {
+        a_edge->setChecked(false);
+        a_corner->setChecked(false);
+        a_dilute->setChecked(false);
+        a_mix->setChecked(false);
+        state_change(1);
+    }
+    else
+    {
+        a_erode->setChecked(true);
+    }
+}
+
+void CalibrateWindow::dilute_clicked(bool state)
+{
+    if (state)
+    {
+        a_edge->setChecked(false);
+        a_erode->setChecked(false);
+        a_corner->setChecked(false);
+        a_mix->setChecked(false);
+        state_change(1);
+    }
+    else
+    {
+        a_dilute->setChecked(true);
+    }
+}
+
+void CalibrateWindow::mix_clicked(bool state)
+{
+    if (state)
+    {
+        a_edge->setChecked(false);
+        a_erode->setChecked(false);
+        a_corner->setChecked(false);
+        a_dilute->setChecked(false);
+        state_change(1);
+    }
+    else
+    {
+        a_mix->setChecked(true);
+    }
+}
 
 void CalibrateWindow::CreateMenu()
 {
@@ -384,12 +482,21 @@ void CalibrateWindow::CreateMenu()
     file_menu = menu->addMenu("File");
     a_open = file_menu->addAction("Open");
     a_save = file_menu->addAction("Save");
+
     mode_menu = menu->addMenu("Mode");
-    a_edgeDetection = mode_menu->addAction("Edge Detection");
+    a_edge = mode_menu->addAction("Edge Detection");
     a_dilute = mode_menu->addAction("Dilute");
     a_erode = mode_menu->addAction("Erode");
-    a_mix = mode_menu->addAction("Erode & Dilute");
+    a_mix = mode_menu->addAction("Erode + Dilute");
     a_corner = mode_menu->addAction("Corner Detection");
+
+    a_edge->setCheckable(true);
+    a_dilute->setCheckable(true);
+    a_erode->setCheckable(true);
+    a_mix->setCheckable(true);
+    a_corner->setCheckable(true);
+
+    a_edge->setChecked(true);
 
     help_menu = menu->addMenu("Help");
     a_about = help_menu->addAction("About");
@@ -421,14 +528,14 @@ void CalibrateWindow::CreateLayout()
     vslider1_layout = new QVBoxLayout;
     vslider1_label = new QLabel("value = 0");
     vslider1 = new QSlider();
-    vslider1->setMaximum(300);
+    vslider1->setMaximum(30);
     vslider1_layout->addWidget(vslider1);
     vslider1_layout->addWidget(vslider1_label);
 
     vslider2_layout = new QVBoxLayout;
     vslider2_label = new QLabel("value = 0");
     vslider2 = new QSlider();
-    vslider2->setMaximum(300);
+    vslider2->setMaximum(30);
     vslider2_layout->addWidget(vslider2);
     vslider2_layout->addWidget(vslider2_label);
 
@@ -437,16 +544,6 @@ void CalibrateWindow::CreateLayout()
     surface_layout->addLayout(vslider2_layout);
     surface_layout->addWidget(surface);
 
-	radio_1 = new QRadioButton("Edge Detection");
-	radio_2 = new QRadioButton("Erode");
-	radio_3 = new QRadioButton("Dilate");
-	radio_4 = new QRadioButton("Dilute & Erode");
-	radio_layout = new QHBoxLayout;
-	radio_layout->addWidget(radio_1);
-	radio_layout->addWidget(radio_2);
-	radio_layout->addWidget(radio_3);
-	radio_layout->addWidget(radio_4);
-	radio_1->setChecked(true);
     //Button
 	button_layout = new QHBoxLayout;
     open_btn = new QPushButton("Open");
@@ -455,30 +552,14 @@ void CalibrateWindow::CreateLayout()
 	button_layout->addWidget(open_btn);
     button_layout->addWidget(calibrate_btn);
 	button_layout->addWidget(save_btn);
-	//Options
-	radioa1 = new QRadioButton("Null");
-	radioa2 = new QRadioButton("Null");
-	radioa3 = new QRadioButton("Null");
-	radioa4 = new QRadioButton("Null");
-	radio2_layout = new QHBoxLayout;	
+    //Options
 	surface2_layout = new QVBoxLayout;
 	option_layout = new QHBoxLayout;
     chkbox_layout = new QHBoxLayout;
-    radio1_groupbox = new QGroupBox;
-    radio1_groupbox->setAlignment(Qt::AlignLeft);
-    radio1_groupbox->setStyleSheet("QGroupBox::title { left = -2 ;border: 0px ;  border-radius: 0px; padding: 0px 0px 0px 0px; margin = 0px 0px 0px 0px } QGroupBox {  border: 0px ;  border-radius: 0px; padding: 0px 0px 0px 0px;} ");
-	radio2_layout->addWidget(radioa1);
-radio1_groupbox->setAttribute(Qt::WA_LayoutOnEntireRect);
-	radio2_layout->addWidget(radioa2);
-	radio2_layout->addWidget(radioa3);
-	radio2_layout->addWidget(radioa4);
-    radio1_groupbox->setLayout(radio2_layout);
-    option_layout->addWidget(radio1_groupbox);
     surface2_layout->addLayout(option_layout);
     //Start making layout
     main_layout->addLayout(slider1_layout);
     main_layout->addLayout(slider2_layout);
-    main_layout->addLayout(radio_layout);
     main_layout->addLayout(surface2_layout);
     main_layout->addLayout(surface_layout);
     main_layout->addLayout(button_layout);
@@ -490,7 +571,7 @@ radio1_groupbox->setAttribute(Qt::WA_LayoutOnEntireRect);
 	treshold_2 = 0;
     //Window
     Main_Widget->setLayout(main_layout);
-    setWindowTitle(trUtf8("Foad"));
+    setWindowTitle(trUtf8("Calibration"));
     setCentralWidget(Main_Widget);
     //setLayoutDirection(Qt::RightToLeft);
 }

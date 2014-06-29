@@ -26,8 +26,12 @@ private slots:
     void open_clicked();
     void save_clicked();
     void calibrate_clicked();
-	void state_change(int is_radio = 0);
-
+    void state_change(int changed = 0);
+    void cornerdetect_clicked(bool);
+    void edgedetect_clicked(bool);
+    void erode_clicked(bool);
+    void dilute_clicked(bool);
+    void mix_clicked(bool);
 
 private:
     void CreateLayout();
@@ -47,7 +51,7 @@ private:
     QMenu		 *help_menu;
     QAction		 *a_open;
     QAction		 *a_save;
-    QAction		 *a_edgeDetection;
+    QAction		 *a_edge;
     QAction		 *a_dilute;
     QAction		 *a_erode;
     QAction		 *a_mix;
@@ -72,18 +76,7 @@ private:
     QHBoxLayout  *surface_layout;
     QVBoxLayout  *surface2_layout;
     QHBoxLayout  *option_layout;
-    QHBoxLayout  *radio2_layout;
     QHBoxLayout  *chkbox_layout;
-    QHBoxLayout  *radio_layout;
-	QGroupBox    *radio1_groupbox;
-	QRadioButton *radio_1;
-	QRadioButton *radio_2;
-	QRadioButton *radio_3;
-	QRadioButton *radio_4;
-	QRadioButton *radioa1;
-	QRadioButton *radioa2;
-	QRadioButton *radioa3;
-	QRadioButton *radioa4;
     QHBoxLayout  *button_layout;
     QPushButton  *open_btn;
     QPushButton  *save_btn;
