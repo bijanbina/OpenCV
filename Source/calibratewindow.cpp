@@ -17,6 +17,8 @@ CalibrateWindow::CalibrateWindow(QWidget *parent) :
     connect(save_btn, SIGNAL(released()), this, SLOT(save_clicked()));
     connect(calibrate_btn, SIGNAL(released()), this, SLOT(calibrate_clicked()));
 
+    connect(a_open, SIGNAL(triggered(bool)),this,SLOT(open_clicked()));
+    connect(a_save, SIGNAL(triggered(bool)),this,SLOT(save_clicked()));
     connect(a_corner, SIGNAL(triggered(bool)),this,SLOT(cornerdetect_clicked(bool)));
     connect(a_edge, SIGNAL(triggered(bool)),this,SLOT(edgedetect_clicked(bool)));
     connect(a_erode, SIGNAL(triggered(bool)),this,SLOT(erode_clicked(bool)));
@@ -50,6 +52,9 @@ void CalibrateWindow::state_change(int changed)
 	{
 		chk1->setChecked(false);
 		chk2->setChecked(false);
+        treshold_1 = 0;
+        treshold_2 = 0;
+        treshold_3 = 0;
         slider1->setEnabled(true);
         slider2->setEnabled(true);
         slider1->setValue(0);
@@ -202,23 +207,27 @@ void CalibrateWindow::state_change(int changed)
     {
         if (image != NULL)
         {
-            if (treshold_1 == 0 && treshold_2 == 0 )
+            imgout = cvCloneImage(image);
+            IplImage *imgclone = cvCloneImage(image);
+            CvSeq* firstContour = NULL;
+            CvMemStorage* cnt_storage = cvCreateMemStorage();
+            cvFindContours(imgclone,cnt_storage,&firstContour,sizeof(CvContour),CV_RETR_TREE,CV_CHAIN_APPROX_SIMPLE);
+            CvMemStorage* poly_storage = cvCreateMemStorage();
+            cvZero( imgout );
+            for(volatile size_t i = 0; i < firstContour->total; i++)
             {
-                imageView = QImage((const unsigned char*)(imagesrc->imageData), imagesrc->width,imagesrc->height,QImage::Format_RGB888).rgbSwapped();
-                surface->setPixmap(QPixmap::fromImage(imageView));
+                CvSeq* poly = cvApproxPoly(cvGetSeqElem(firstContour,i),sizeof(CvContour),poly_storage, CV_POLY_APPROX_DP,treshold_3);
+                cvDrawContours( imgout,poly, cvScalarAll(255), cvScalarAll(255),100);
             }
-            else
-            {
-                imgout = cvCreateImage(cvGetSize(image),image->depth,image->nChannels);
-                imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
-                surface->setPixmap(QPixmap::fromImage(imageView));
-            }
+            imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
+            surface->setPixmap(QPixmap::fromImage(imageView));
         }
         chk1->setText("NULL");
         chk2->setText("NULL");
-        slider1->setMaximum(900);
-        slider2->setMaximum(900);
-        vslider1->setMaximum(300);
+        slider1->setMaximum(4);
+        slider2->setMaximum(5);
+        vslider1->setMaximum(100);
+        vslider1->setEnabled(true);
         vslider2->setEnabled(false);
     }
 	else
@@ -321,7 +330,7 @@ void CalibrateWindow::chk1_change(int value)
 		}
         else if (a_mix->isChecked())
 		{
-			state_change();
+            state_change();
 		}
     }
 	else
@@ -410,7 +419,7 @@ void CalibrateWindow::calibrate_clicked()
 
 void CalibrateWindow::next_clicked()
 {
-    if (imgout == NULL)
+    if (imgout != NULL)
     {
         cvReleaseImage(&image);
         cvReleaseImage(&imagesrc);
@@ -626,7 +635,7 @@ void CalibrateWindow::CreateLayout()
     main_layout->addLayout(surface_layout);
     main_layout->addLayout(button_layout);
     //Side object
-    file_name = "/home/bijan/Pictures/test.jpg";
+    file_name = "/home/bijan/2.png";
     chk1_state = 0;
     chk2_state = 0;
 	treshold_1 = 0;
