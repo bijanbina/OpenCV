@@ -14,7 +14,6 @@ public:
 
 protected:
     char        *FileOpName; //declare FileOpName as IplImage
-    IplImage    *imagerd;    //declare imagerd as IplImage
 
 private slots:
     void slider1_change(int);
@@ -32,11 +31,14 @@ private slots:
     void erode_clicked(bool);
     void dilute_clicked(bool);
     void mix_clicked(bool);
+    void loop_clicked(bool);
+    void next_clicked();
 
 private:
     void CreateLayout();
     void CreateMenu();
     void openImage();
+    void trLoop(CvMat *in,CvMat *out);
     void find_corner(IplImage* in ,double quality_level ,double min_distance ,int MAX_CORNERS , double k) ;
     void MyFilledCircle( cv::Mat img, cv::Point center );
     IplImage* doCanny( IplImage* in, double lowThresh, double highThresh, double aperture );
@@ -51,14 +53,18 @@ private:
     QMenu		 *help_menu;
     QAction		 *a_open;
     QAction		 *a_save;
+    QAction		 *a_next;
     QAction		 *a_edge;
     QAction		 *a_dilute;
     QAction		 *a_erode;
     QAction		 *a_mix;
     QAction		 *a_corner;
+    QAction		 *a_loop;
     QAction		 *a_about;
     IplImage     *image;
-    QImage        imageView;
+    IplImage     *imgout;
+    IplImage     *imagesrc; 
+	QImage        imageView;
     QVBoxLayout  *main_layout;
     QHBoxLayout  *slider1_layout;
     QLabel       *slider1_label;

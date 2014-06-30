@@ -87,7 +87,7 @@ void MainWindow::CreateMenu()
 
 void MainWindow::CreateLayout()
 {
-	calibrate_window = new CalibrateWindow(this);
+    calibrate_window = new CalibrateWindow();
     main_layout = new QVBoxLayout;
     Main_Widget = new QWidget;
 
@@ -108,7 +108,7 @@ void MainWindow::CreateLayout()
 	button_layout->addWidget(open_btn);
 	button_layout->addWidget(calibrate_btn);
 	button_layout->addWidget(analysis_btn);
-	button_layout->addWidget(save_btn);
+    button_layout->addWidget(save_btn);
     //Options
     surface2_layout = new QVBoxLayout;
     surface2_layout->addLayout(option_layout);

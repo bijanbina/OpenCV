@@ -22,6 +22,8 @@ CalibrateWindow::CalibrateWindow(QWidget *parent) :
     connect(a_erode, SIGNAL(triggered(bool)),this,SLOT(erode_clicked(bool)));
     connect(a_dilute, SIGNAL(triggered(bool)),this,SLOT(dilute_clicked(bool)));
     connect(a_mix, SIGNAL(triggered(bool)),this,SLOT(mix_clicked(bool)));
+    connect(a_loop, SIGNAL(triggered(bool)),this,SLOT(loop_clicked(bool)));
+    connect(a_next, SIGNAL(triggered(bool)),this,SLOT(next_clicked()));
 
     openImage();
 }
@@ -33,13 +35,17 @@ CalibrateWindow::~CalibrateWindow()
 //Open image function call
 void CalibrateWindow::openImage()
 {
-    imagerd = cvLoadImage(file_name);
+    imagesrc = cvLoadImage(file_name);
     image = cvLoadImage(file_name,CV_LOAD_IMAGE_GRAYSCALE);
 	state_change();
 }
 
 void CalibrateWindow::state_change(int changed)
 {
+    if (imgout != NULL)
+	{
+        cvReleaseImage(&imgout);
+	}
     if (changed)
 	{
 		chk1->setChecked(false);
@@ -59,16 +65,15 @@ void CalibrateWindow::state_change(int changed)
         	{
 				if ( chk2_state )
 				{
-            		IplImage* out = cvCreateImage(cvGetSize(image),image->depth,image->nChannels);
-					cvErode( image, out , NULL , treshold_3 );
-					cvDilate( out, out , NULL , treshold_4 );
-            		imageView = QImage((const unsigned char*)(out->imageData), out->width,out->height,QImage::Format_Indexed8).rgbSwapped();
-            		surface->setPixmap(QPixmap::fromImage(imageView));
-            		cvReleaseImage( &out );
+                    imgout = cvCreateImage(cvGetSize(image),image->depth,image->nChannels);
+                    cvErode( image, imgout , NULL , treshold_3 );
+                    cvDilate( imgout, imgout , NULL , treshold_4 );
+                    imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
+                    surface->setPixmap(QPixmap::fromImage(imageView));
 				}
 				else
 				{
-                    imageView = QImage((const unsigned char*)(imagerd->imageData), imagerd->width,imagerd->height,QImage::Format_RGB888).rgbSwapped();
+                    imageView = QImage((const unsigned char*)(imagesrc->imageData), imagesrc->width,imagesrc->height,QImage::Format_RGB888).rgbSwapped();
             		surface->setPixmap(QPixmap::fromImage(imageView));
 				}
         	}
@@ -79,18 +84,16 @@ void CalibrateWindow::state_change(int changed)
             		IplImage* buffer = cvCreateImage(cvGetSize(image),image->depth,image->nChannels);
 					cvErode( image, buffer , NULL , treshold_3 );
 					cvDilate( buffer, buffer , NULL , treshold_4 );
-            		IplImage* out = doCanny( buffer, treshold_1 ,treshold_2, 3 );
-            		imageView = QImage((const unsigned char*)(out->imageData), out->width,out->height,QImage::Format_Indexed8).rgbSwapped();
+                    imgout = doCanny( buffer, treshold_1 ,treshold_2, 3 );
+                    imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
             		surface->setPixmap(QPixmap::fromImage(imageView));
-            		cvReleaseImage( &buffer );
-            		cvReleaseImage( &out );
+                    cvReleaseImage( &buffer );
 				}
 				else
                 {
-                    IplImage* out = doCanny( image, treshold_1 ,treshold_2, 3 );
-                    imageView = QImage((const unsigned char*)(out->imageData), out->width,out->height,QImage::Format_Indexed8).rgbSwapped();
+                    imgout = doCanny( image, treshold_1 ,treshold_2, 3 );
+                    imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
                     surface->setPixmap(QPixmap::fromImage(imageView));
-                    cvReleaseImage( &out );
 				}
         	}
 			chk1->setText("Proportion 3");
@@ -105,16 +108,15 @@ void CalibrateWindow::state_change(int changed)
     	{
         	if (treshold_1 == 0 && treshold_2 == 0 )
         	{
-            	imageView = QImage((const unsigned char*)(imagerd->imageData), imagerd->width,imagerd->height,QImage::Format_RGB888).rgbSwapped();
+                imageView = QImage((const unsigned char*)(imagesrc->imageData), imagesrc->width,imagesrc->height,QImage::Format_RGB888).rgbSwapped();
             	surface->setPixmap(QPixmap::fromImage(imageView));
         	}
         	else
         	{
-            	IplImage* out = cvCreateImage(cvGetSize(image),image->depth,image->nChannels);
-				cvErode( image, out , NULL , treshold_1 );
-            	imageView = QImage((const unsigned char*)(out->imageData), out->width,out->height,QImage::Format_Indexed8).rgbSwapped();
-            	surface->setPixmap(QPixmap::fromImage(imageView));
-            	cvReleaseImage( &out );
+                imgout = cvCreateImage(cvGetSize(image),image->depth,image->nChannels);
+                cvErode( image, imgout , NULL , treshold_1 );
+                imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
+                surface->setPixmap(QPixmap::fromImage(imageView));
         	}
     	}
 		chk1->setText("Null");
@@ -128,16 +130,15 @@ void CalibrateWindow::state_change(int changed)
     	{
         	if (treshold_1 == 0 && treshold_2 == 0 )
         	{
-            	imageView = QImage((const unsigned char*)(imagerd->imageData), imagerd->width,imagerd->height,QImage::Format_RGB888).rgbSwapped();
+                imageView = QImage((const unsigned char*)(imagesrc->imageData), imagesrc->width,imagesrc->height,QImage::Format_RGB888).rgbSwapped();
             	surface->setPixmap(QPixmap::fromImage(imageView));
         	}
         	else
         	{
-            	IplImage* out = cvCreateImage(cvGetSize(image),image->depth,image->nChannels);
-				cvDilate( image, out , NULL , treshold_1 );
-            	imageView = QImage((const unsigned char*)(out->imageData), out->width,out->height,QImage::Format_Indexed8).rgbSwapped();
-            	surface->setPixmap(QPixmap::fromImage(imageView));
-            	cvReleaseImage( &out );
+                imgout = cvCreateImage(cvGetSize(image),image->depth,image->nChannels);
+                cvDilate( image, imgout , NULL , treshold_1 );
+                imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
+                surface->setPixmap(QPixmap::fromImage(imageView));
         	}
     	}
 		chk1->setText("Null");
@@ -151,25 +152,24 @@ void CalibrateWindow::state_change(int changed)
     	{
         	if (treshold_1 == 0 && treshold_2 == 0 )
         	{
-            	imageView = QImage((const unsigned char*)(imagerd->imageData), imagerd->width,imagerd->height,QImage::Format_RGB888).rgbSwapped();
+                imageView = QImage((const unsigned char*)(imagesrc->imageData), imagesrc->width,imagesrc->height,QImage::Format_RGB888).rgbSwapped();
             	surface->setPixmap(QPixmap::fromImage(imageView));
         	}
         	else
         	{
-            	IplImage* out = cvCreateImage(cvGetSize(image),image->depth,image->nChannels);
+                imgout = cvCreateImage(cvGetSize(image),image->depth,image->nChannels);
 				if (chk1->isChecked())
 				{
-					cvDilate( image, out , NULL , treshold_1 );
-					cvErode( out, out , NULL , treshold_2 );
+                    cvDilate( image, imgout , NULL , treshold_1 );
+                    cvErode( imgout, imgout , NULL , treshold_2 );
 				}
 				else
 				{
-					cvErode( image, out , NULL , treshold_1 );
-					cvDilate( out, out , NULL , treshold_2 );
+                    cvErode( image, imgout , NULL , treshold_1 );
+                    cvDilate( imgout, imgout , NULL , treshold_2 );
 				}
-            	imageView = QImage((const unsigned char*)(out->imageData), out->width,out->height,QImage::Format_Indexed8).rgbSwapped();
-            	surface->setPixmap(QPixmap::fromImage(imageView));
-            	cvReleaseImage( &out );
+                imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
+                surface->setPixmap(QPixmap::fromImage(imageView));
         	}
     	}
 		chk1->setText("Reverse");
@@ -183,12 +183,35 @@ void CalibrateWindow::state_change(int changed)
         {
             if (treshold_1 == 0 && treshold_2 == 0 )
             {
-                imageView = QImage((const unsigned char*)(imagerd->imageData), imagerd->width,imagerd->height,QImage::Format_RGB888).rgbSwapped();
+                imageView = QImage((const unsigned char*)(imagesrc->imageData), imagesrc->width,imagesrc->height,QImage::Format_RGB888).rgbSwapped();
                 surface->setPixmap(QPixmap::fromImage(imageView));
             }
             else
             {
                 calibrate_clicked();
+            }
+        }
+        chk1->setText("NULL");
+        chk2->setText("NULL");
+        slider1->setMaximum(900);
+        slider2->setMaximum(900);
+        vslider1->setMaximum(300);
+        vslider2->setEnabled(false);
+    }
+    else if (a_loop->isChecked())
+    {
+        if (image != NULL)
+        {
+            if (treshold_1 == 0 && treshold_2 == 0 )
+            {
+                imageView = QImage((const unsigned char*)(imagesrc->imageData), imagesrc->width,imagesrc->height,QImage::Format_RGB888).rgbSwapped();
+                surface->setPixmap(QPixmap::fromImage(imageView));
+            }
+            else
+            {
+                imgout = cvCreateImage(cvGetSize(image),image->depth,image->nChannels);
+                imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
+                surface->setPixmap(QPixmap::fromImage(imageView));
             }
         }
         chk1->setText("NULL");
@@ -385,6 +408,19 @@ void CalibrateWindow::calibrate_clicked()
     find_corner(input,quality_level,min_distance,maxCorner,k);
 }
 
+void CalibrateWindow::next_clicked()
+{
+    if (imgout == NULL)
+    {
+        cvReleaseImage(&image);
+        cvReleaseImage(&imagesrc);
+        image = imgout;
+        imagesrc = cvCreateImage( cvGetSize(image), 8, 3 );
+        cvCvtColor( image, imagesrc, CV_GRAY2BGR );
+        imgout = NULL;
+    }
+}
+
 void CalibrateWindow::open_clicked()
 {
     file_name = QFileDialog::getOpenFileName(this, "Open File", "","Images (*.png *.jpg)").toLocal8Bit().data();
@@ -418,6 +454,7 @@ void CalibrateWindow::edgedetect_clicked(bool state)
         a_erode->setChecked(false);
         a_dilute->setChecked(false);
         a_mix->setChecked(false);
+        a_loop->setChecked(false);
         state_change(1);
     }
     else
@@ -434,6 +471,7 @@ void CalibrateWindow::erode_clicked(bool state)
         a_corner->setChecked(false);
         a_dilute->setChecked(false);
         a_mix->setChecked(false);
+        a_loop->setChecked(false);
         state_change(1);
     }
     else
@@ -450,6 +488,7 @@ void CalibrateWindow::dilute_clicked(bool state)
         a_erode->setChecked(false);
         a_corner->setChecked(false);
         a_mix->setChecked(false);
+        a_loop->setChecked(false);
         state_change(1);
     }
     else
@@ -466,11 +505,29 @@ void CalibrateWindow::mix_clicked(bool state)
         a_erode->setChecked(false);
         a_corner->setChecked(false);
         a_dilute->setChecked(false);
+        a_loop->setChecked(false);
         state_change(1);
     }
     else
     {
         a_mix->setChecked(true);
+    }
+}
+
+void CalibrateWindow::loop_clicked(bool state)
+{
+    if (state)
+    {
+        a_edge->setChecked(false);
+        a_erode->setChecked(false);
+        a_corner->setChecked(false);
+        a_dilute->setChecked(false);
+        a_mix->setChecked(false);
+        state_change(1);
+    }
+    else
+    {
+        a_loop->setChecked(true);
     }
 }
 
@@ -482,6 +539,7 @@ void CalibrateWindow::CreateMenu()
     file_menu = menu->addMenu("File");
     a_open = file_menu->addAction("Open");
     a_save = file_menu->addAction("Save");
+    a_next = file_menu->addAction("Next");
 
     mode_menu = menu->addMenu("Mode");
     a_edge = mode_menu->addAction("Edge Detection");
@@ -489,11 +547,13 @@ void CalibrateWindow::CreateMenu()
     a_erode = mode_menu->addAction("Erode");
     a_mix = mode_menu->addAction("Erode + Dilute");
     a_corner = mode_menu->addAction("Corner Detection");
+    a_loop = mode_menu->addAction("Loop Detection");
 
     a_edge->setCheckable(true);
     a_dilute->setCheckable(true);
     a_erode->setCheckable(true);
     a_mix->setCheckable(true);
+    a_loop->setCheckable(true);
     a_corner->setCheckable(true);
 
     a_edge->setChecked(true);
@@ -504,6 +564,8 @@ void CalibrateWindow::CreateMenu()
 
 void CalibrateWindow::CreateLayout()
 {
+	//Default
+    imgout = NULL;
     surface = new QLabel();
     main_layout = new QVBoxLayout;
     Main_Widget = new QWidget;
@@ -576,6 +638,10 @@ void CalibrateWindow::CreateLayout()
     //setLayoutDirection(Qt::RightToLeft);
 }
 
+void CalibrateWindow::trLoop(CvMat *in, CvMat *out)
+{
+    ;
+}
 
 IplImage* CalibrateWindow::doCanny( IplImage* in, double lowThresh, double highThresh, double aperture )
 {
@@ -584,7 +650,7 @@ IplImage* CalibrateWindow::doCanny( IplImage* in, double lowThresh, double highT
         printf("Not supported\n");
         exit(0); //Canny only handles gray scale images
     }
-    IplImage* out = cvCreateImage( cvGetSize( in ) , IPL_DEPTH_8U, 1 );
+    IplImage *out = cvCreateImage( cvGetSize( in ) , IPL_DEPTH_8U, 1 );
     cvCanny( in, out, lowThresh, highThresh, aperture );
     return( out );
 }
@@ -594,7 +660,7 @@ IplImage* CalibrateWindow::doPyrDown( IplImage* in, int filter)
     // Best to make sure input image is divisible by two.
     //
     assert( in->width%2 == 0 && in->height%2 == 0 );
-    IplImage* out = cvCreateImage(
+    IplImage *out = cvCreateImage(
                 cvSize( in->width/2, in->height/2 ),
                 in->depth,
                 in->nChannels
@@ -618,6 +684,7 @@ void CalibrateWindow::find_corner(IplImage* in ,double quality_level ,double min
     cv::Mat grayFrame;
     std::vector<cv::Point2f> corners;
     grayFrame = cv::Mat(in);
+    int ct_type = grayFrame.type();
     cv::goodFeaturesToTrack(grayFrame, corners, MAX_CORNERS, quality_level,  min_distance ,cv::noArray() ,10,false,k);
     for (int i = 0 ; i < MAX_CORNERS ; i++)
     {
