@@ -214,10 +214,13 @@ void CalibrateWindow::state_change(int changed)
             cvFindContours(imgclone,cnt_storage,&firstContour,sizeof(CvContour),CV_RETR_TREE,CV_CHAIN_APPROX_SIMPLE);
             CvMemStorage* poly_storage = cvCreateMemStorage();
             cvZero( imgout );
-            for(volatile size_t i = 0; i < firstContour->total; i++)
+            CvSeq* dummy_seq = firstContour;
+            CvSeq  *poly = NULL;
+            while( dummy_seq != NULL )
             {
-                CvSeq* poly = cvApproxPoly(cvGetSeqElem(firstContour,i),sizeof(CvContour),poly_storage, CV_POLY_APPROX_DP,treshold_3);
+                poly = cvApproxPoly(dummy_seq,sizeof(CvContour),poly_storage, CV_POLY_APPROX_DP,treshold_3);
                 cvDrawContours( imgout,poly, cvScalarAll(255), cvScalarAll(255),100);
+                dummy_seq = dummy_seq->h_next;
             }
             imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
             surface->setPixmap(QPixmap::fromImage(imageView));
