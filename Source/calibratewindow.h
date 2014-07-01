@@ -21,8 +21,8 @@ private slots:
     void slider2_change(int);
     void slider3_change(int);
     void slider4_change(int);
-    void chk1_change(int);
-    void chk2_change(int);
+    void chk1_change();
+    void chk2_change();
     void open_clicked();
     void save_clicked();
     void replace_clicked();
@@ -39,11 +39,9 @@ private:
     void CreateMenu();
     void openImage();
     void bijoo_filter(IplImage *in,int kernel_size);
-    void trLoop(CvMat *in,CvMat *out);
     void find_corner(IplImage* in ,double quality_level ,double min_distance ,int MAX_CORNERS , double k) ;
     void MyFilledCircle( cv::Mat img, cv::Point center );
     IplImage* doCanny( IplImage* in, double lowThresh, double highThresh, double aperture );
-    IplImage* doPyrDown( IplImage* in, int filter);
 
     QLabel       *surface;
 	QCheckBox    *chk1;
@@ -93,8 +91,6 @@ private:
     double        treshold_3;
     double        treshold_4;
     char		 *file_name;
-	int           chk1_state;
-	int           chk2_state;
 };
 
 

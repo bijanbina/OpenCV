@@ -246,17 +246,3 @@ IplImage* MainWindow::doCanny( IplImage* in, double lowThresh, double highThresh
     cvCanny( in, out, lowThresh, highThresh, aperture );
     return( out );
 }
-
-IplImage* MainWindow::doPyrDown( IplImage* in, int filter)
-{
-    // Best to make sure input image is divisible by two.
-    //
-    assert( in->width%2 == 0 && in->height%2 == 0 );
-    IplImage* out = cvCreateImage(
-                cvSize( in->width/2, in->height/2 ),
-                in->depth,
-                in->nChannels
-                );
-    cvPyrDown( in, out , CV_GAUSSIAN_5x5);
-    return( out );
-};

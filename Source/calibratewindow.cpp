@@ -10,8 +10,8 @@ CalibrateWindow::CalibrateWindow(QWidget *parent) :
     connect(slider2,SIGNAL(valueChanged(int)), this, SLOT(slider2_change(int)));
     connect(vslider1,SIGNAL(valueChanged(int)), this, SLOT(slider3_change(int)));
     connect(vslider2,SIGNAL(valueChanged(int)), this, SLOT(slider4_change(int)));
-    connect(chk1,SIGNAL(stateChanged(int)), this, SLOT(chk1_change(int)));
-    connect(chk2,SIGNAL(stateChanged(int)), this, SLOT(chk2_change(int)));
+    connect(chk1,SIGNAL(stateChanged(int)), this, SLOT(chk1_change()));
+    connect(chk2,SIGNAL(stateChanged(int)), this, SLOT(chk2_change()));
     connect(back_btn, SIGNAL(released()), this, SLOT(open_clicked()));
     connect(next_btn, SIGNAL(released()), this, SLOT(next_clicked()));
     connect(replace_btn, SIGNAL(released()), this, SLOT(replace_clicked()));
@@ -64,7 +64,7 @@ void CalibrateWindow::state_change(int changed)
 	{
     	if (image != NULL)
     	{
-            if ( chk2_state )
+            if ( chk2->isChecked() )
             {
                 if (a_equal->isChecked())
                 {
@@ -84,7 +84,7 @@ void CalibrateWindow::state_change(int changed)
             }
         	if (treshold_1 == 0 && treshold_2 == 0 )
         	{
-				if ( chk2_state )
+                if ( chk2->isChecked() )
                 {
                     imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
 				}
@@ -95,7 +95,7 @@ void CalibrateWindow::state_change(int changed)
         	}
         	else
         	{
-				if ( chk2_state )
+                if ( chk2->isChecked() )
                 {
                     IplImage* buffer = imgout;
                     imgout = doCanny( imgout, treshold_1 ,treshold_2, 3 );
@@ -110,7 +110,7 @@ void CalibrateWindow::state_change(int changed)
             }
             surface->setPixmap(QPixmap::fromImage(imageView));
             chk1->setText("Proportion 3");
-            chk2->setText("Dilute & Erode");
+            chk2->setText("Dilute+Erode");
     	}
 		slider1->setMaximum(1000);
         slider2->setMaximum(1000);
@@ -219,7 +219,7 @@ void CalibrateWindow::state_change(int changed)
 void CalibrateWindow::slider1_change(int value)
 {
     treshold_1 = value;
-    if (chk1_state)
+    if (chk1->isChecked())
     {
         if (a_edge->isChecked())
 		{
@@ -234,7 +234,7 @@ void CalibrateWindow::slider1_change(int value)
     {
 		;
     }
-    if (chk2_state)
+    if (chk2->isChecked())
     {
         if (a_edge->isChecked())
 		{
@@ -275,15 +275,14 @@ void CalibrateWindow::slider4_change(int value)
     vslider2_label->setText(QString("value = %1").arg(value));
 }
 
-void CalibrateWindow::chk1_change(int value)
+void CalibrateWindow::chk1_change()
 {
-    chk1_state = value;
-    if (chk1_state)
+    if (chk1->isChecked())
     {
         if (a_edge->isChecked())
         {
 			slider2->setValue(slider1->value()/3);
-        	slider2->setEnabled(!chk1_state);
+            slider2->setEnabled(!chk1->isChecked());
         }
         else if (a_corner->isChecked())
 		{
@@ -294,7 +293,7 @@ void CalibrateWindow::chk1_change(int value)
 	{
         if (a_edge->isChecked())
         {
-        	slider2->setEnabled(!chk1_state);
+            slider2->setEnabled(!chk1->isChecked());
         }
         else if (a_corner->isChecked())
 		{
@@ -303,10 +302,9 @@ void CalibrateWindow::chk1_change(int value)
     }
 }
 
-void CalibrateWindow::chk2_change(int value)
+void CalibrateWindow::chk2_change()
 {
-    chk2_state = value;
-    if (chk2_state)
+    if (chk2->isChecked())
     {
         if (a_edge->isChecked())
         {
@@ -315,7 +313,7 @@ void CalibrateWindow::chk2_change(int value)
         else if (a_corner->isChecked())
 		{
 			slider2->setValue(slider1->value());
-        	slider2->setEnabled(!chk2_state);
+            slider2->setEnabled(!chk2->isChecked());
 		}
 	}
 	else
@@ -326,7 +324,7 @@ void CalibrateWindow::chk2_change(int value)
         }
         else if (a_corner->isChecked())
 		{
-			slider2->setEnabled(!chk2_state);	
+            slider2->setEnabled(!chk2->isChecked());
 		}
 	}
 }
@@ -481,6 +479,7 @@ void CalibrateWindow::CreateLayout()
     Main_Widget = new QWidget;
 	chk1 = new QCheckBox("prop 3");
 	chk2 = new QCheckBox("option 2");
+    chk2->setChecked(true);
     slider1_layout = new QHBoxLayout;
     slider1_label = new QLabel("value = 0");
     slider1 = new QSlider(Qt::Horizontal);
@@ -537,20 +536,15 @@ void CalibrateWindow::CreateLayout()
     main_layout->addLayout(button_layout);
     //Side object
     file_name = "/home/bijan/2.png";
-    chk1_state = 0;
-    chk2_state = 0;
 	treshold_1 = 0;
 	treshold_2 = 0;
+    treshold_3 = 0;
+    treshold_4 = 0;
     //Window
     Main_Widget->setLayout(main_layout);
     setWindowTitle(trUtf8("Calibration"));
     setCentralWidget(Main_Widget);
     //setLayoutDirection(Qt::RightToLeft);
-}
-
-void CalibrateWindow::trLoop(CvMat *in, CvMat *out)
-{
-    ;
 }
 
 IplImage* CalibrateWindow::doCanny( IplImage* in, double lowThresh, double highThresh, double aperture )
@@ -564,20 +558,6 @@ IplImage* CalibrateWindow::doCanny( IplImage* in, double lowThresh, double highT
     cvCanny( in, out, lowThresh, highThresh, aperture );
     return( out );
 }
-
-IplImage* CalibrateWindow::doPyrDown( IplImage* in, int filter)
-{
-    // Best to make sure input image is divisible by two.
-    //
-    assert( in->width%2 == 0 && in->height%2 == 0 );
-    IplImage *out = cvCreateImage(
-                cvSize( in->width/2, in->height/2 ),
-                in->depth,
-                in->nChannels
-                );
-    cvPyrDown( in, out , CV_GAUSSIAN_5x5);
-    return( out );
-};
 
 void CalibrateWindow::MyFilledCircle( cv::Mat img, cv::Point center )
 {
@@ -593,7 +573,6 @@ void CalibrateWindow::find_corner(IplImage* in ,double quality_level ,double min
     cv::Mat grayFrame;
     std::vector<cv::Point2f> corners;
     grayFrame = cv::Mat(in);
-    int ct_type = grayFrame.type();
     cv::goodFeaturesToTrack(grayFrame, corners, MAX_CORNERS, quality_level,  min_distance ,cv::noArray() ,10,false,k);
     for (int i = 0 ; i < MAX_CORNERS ; i++)
     {
