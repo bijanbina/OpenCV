@@ -30,7 +30,6 @@ private slots:
     void cornerdetect_clicked(bool);
     void edgedetect_clicked(bool);
     void loop_clicked(bool);
-    void bijoo_clicked(bool);
     void equal_clicked(bool);
     void next_clicked();
 
@@ -38,7 +37,7 @@ private:
     void CreateLayout();
     void CreateMenu();
     void openImage();
-    void bijoo_filter(IplImage *in,int kernel_size);
+    void bold_filter(IplImage *in,int kernel_size);
     void find_corner(IplImage* in ,double quality_level ,double min_distance ,int MAX_CORNERS , double k) ;
     void MyFilledCircle( cv::Mat img, cv::Point center );
     IplImage* doCanny( IplImage* in, double lowThresh, double highThresh, double aperture );
@@ -58,7 +57,6 @@ private:
     QAction		 *a_corner;
     QAction		 *a_loop;
     QAction		 *a_about;
-    QAction		 *a_bijoo;
     QAction		 *a_equal;
     IplImage     *image;
     IplImage     *imgout;

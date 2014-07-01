@@ -21,7 +21,6 @@ CalibrateWindow::CalibrateWindow(QWidget *parent) :
     connect(a_corner, SIGNAL(triggered(bool)),this,SLOT(cornerdetect_clicked(bool)));
     connect(a_edge, SIGNAL(triggered(bool)),this,SLOT(edgedetect_clicked(bool)));
     connect(a_loop, SIGNAL(triggered(bool)),this,SLOT(loop_clicked(bool)));
-    connect(a_bijoo, SIGNAL(triggered(bool)),this,SLOT(bijoo_clicked(bool)));
     connect(a_equal, SIGNAL(triggered(bool)),this,SLOT(equal_clicked(bool)));
     connect(a_replace, SIGNAL(triggered(bool)),this,SLOT(replace_clicked()));
 
@@ -149,12 +148,19 @@ void CalibrateWindow::state_change(int changed)
         if (image != NULL)
         {
             imgout = cvCloneImage(image);
-            IplImage *imgclone = cvCloneImage(image);
+            if (chk1->isChecked())
+            {
+                bold_filter(imgout,treshold_1);
+            }
+            IplImage *imgclone = cvCloneImage(imgout);
             CvSeq* firstContour = NULL;
             CvMemStorage* cnt_storage = cvCreateMemStorage();
             cvFindContours(imgclone,cnt_storage,&firstContour,sizeof(CvContour),CV_RETR_TREE,CV_CHAIN_APPROX_SIMPLE);
             CvMemStorage* poly_storage = cvCreateMemStorage();
-            cvZero( imgout );
+            if (chk2->isChecked())
+            {
+                cvZero( imgout );
+            }
             CvSeq* dummy_seq = firstContour;
             CvSeq  *poly = NULL;
 
@@ -173,40 +179,15 @@ void CalibrateWindow::state_change(int changed)
                 }
                 dummy_seq = dummy_seq->h_next;
             }
-//            while( i < treshold_4 )
-//            {
-//                dummy_seq = dummy_seq->h_next;
-//                i++;
-//            }
-//            poly = cvApproxPoly(dummy_seq,sizeof(CvContour),poly_storage, CV_POLY_APPROX_DP,treshold_3);
-//            //cvDrawContours( imgout,poly, cvScalarAll(255), cvScalarAll(255),100);
 
             imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
             surface->setPixmap(QPixmap::fromImage(imageView));
         }
-        chk1->setText("NULL");
-        chk2->setText("NULL");
-        slider1->setMaximum(4);
+        chk1->setText("Bold Filter");
+        chk2->setText("Zero Input");
+        slider1->setMaximum(20);
         slider2->setMaximum(5);
         vslider1->setMaximum(100);
-        vslider2->setMaximum(50);
-        vslider1->setEnabled(true);
-        vslider2->setEnabled(true);
-    }
-    else if (a_bijoo->isChecked())
-    {
-        if (image != NULL)
-        {
-            imgout = cvCloneImage(image);
-            bijoo_filter(imgout,treshold_3);
-            imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
-            surface->setPixmap(QPixmap::fromImage(imageView));
-        }
-        chk1->setText("NULL");
-        chk2->setText("NULL");
-        slider1->setMaximum(10);
-        slider2->setMaximum(10);
-        vslider1->setMaximum(20);
         vslider2->setMaximum(50);
         vslider1->setEnabled(true);
         vslider2->setEnabled(true);
@@ -286,7 +267,7 @@ void CalibrateWindow::chk1_change()
         }
         else if (a_corner->isChecked())
 		{
-            state_change();
+            ;
 		}
     }
 	else
@@ -297,9 +278,10 @@ void CalibrateWindow::chk1_change()
         }
         else if (a_corner->isChecked())
 		{
-			state_change();
+            ;
 		}
     }
+    state_change();
 }
 
 void CalibrateWindow::chk2_change()
@@ -308,7 +290,7 @@ void CalibrateWindow::chk2_change()
     {
         if (a_edge->isChecked())
         {
-			state_change();
+            ;
         }
         else if (a_corner->isChecked())
 		{
@@ -320,13 +302,14 @@ void CalibrateWindow::chk2_change()
 	{
         if (a_edge->isChecked())
         {
-        	state_change();
+            ;
         }
         else if (a_corner->isChecked())
 		{
             slider2->setEnabled(!chk2->isChecked());
 		}
 	}
+    state_change();
 }
 
 void CalibrateWindow::save_clicked()
@@ -340,7 +323,23 @@ void CalibrateWindow::save_clicked()
 
 void CalibrateWindow::next_clicked()
 {
-
+    if (imgout != NULL)
+    {
+        cvReleaseImage(&image);
+        cvReleaseImage(&imagesrc);
+        image = imgout;
+        imagesrc = cvCreateImage( cvGetSize(image), 8, 3 );
+        cvCvtColor( image, imagesrc, CV_GRAY2BGR );
+        imgout = NULL;
+    }
+    if (a_edge->isChecked())
+    {
+        a_loop->setChecked(true);
+        a_edge->setChecked(false);
+        a_corner->setChecked(false);
+        state_change(1);
+        vslider1->setValue(9);
+    }
 }
 
 void CalibrateWindow::replace_clicked()
@@ -371,7 +370,6 @@ void CalibrateWindow::cornerdetect_clicked(bool state)
     {
         a_edge->setChecked(false);
         a_loop->setChecked(false);
-        a_bijoo->setChecked(false);
         state_change(1);
     }
     else
@@ -386,27 +384,11 @@ void CalibrateWindow::edgedetect_clicked(bool state)
     {
         a_corner->setChecked(false);
         a_loop->setChecked(false);
-        a_bijoo->setChecked(false);
         state_change(1);
     }
     else
     {
         a_edge->setChecked(true);
-    }
-}
-
-void CalibrateWindow::bijoo_clicked(bool state)
-{
-    if (state)
-    {
-        a_corner->setChecked(false);
-        a_loop->setChecked(false);
-        a_edge->setChecked(false);
-        state_change(1);
-    }
-    else
-    {
-        a_bijoo->setChecked(true);
     }
 }
 
@@ -428,7 +410,6 @@ void CalibrateWindow::loop_clicked(bool state)
     {
         a_edge->setChecked(false);
         a_corner->setChecked(false);
-        a_bijoo->setChecked(false);
         state_change(1);
         vslider1->setValue(9);
     }
@@ -452,7 +433,6 @@ void CalibrateWindow::CreateMenu()
     a_edge = mode_menu->addAction("Edge Detection");
     a_corner = mode_menu->addAction("Corner Detection");
     a_loop = mode_menu->addAction("Loop Detection");
-    a_bijoo =  mode_menu->addAction("Bijoo Filter");
 
     option_menu = menu->addMenu("Option");
     a_equal = option_menu->addAction("Erode = Dilute");
@@ -460,7 +440,6 @@ void CalibrateWindow::CreateMenu()
     a_edge->setCheckable(true);
     a_loop->setCheckable(true);
     a_corner->setCheckable(true);
-    a_bijoo->setCheckable(true);
     a_equal->setCheckable(true);
 
     a_edge->setChecked(true);
@@ -535,7 +514,7 @@ void CalibrateWindow::CreateLayout()
     main_layout->addLayout(surface_layout);
     main_layout->addLayout(button_layout);
     //Side object
-    file_name = "/home/bijan/2.png";
+    file_name = "/home/bijan/Downloads/IMG_20140630_213804.jpg";
 	treshold_1 = 0;
 	treshold_2 = 0;
     treshold_3 = 0;
@@ -583,7 +562,7 @@ void CalibrateWindow::find_corner(IplImage* in ,double quality_level ,double min
     surface->setPixmap(QPixmap::fromImage(imageView));
 }
 
-void CalibrateWindow::bijoo_filter(IplImage *in,int kernel_size)
+void CalibrateWindow::bold_filter(IplImage *in,int kernel_size)
 {
     cv::Mat grayFrame = cv::Mat(in);
     unsigned char imgdata[grayFrame.cols][grayFrame.rows];
