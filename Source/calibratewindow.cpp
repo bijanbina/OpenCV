@@ -20,9 +20,9 @@ CalibrateWindow::CalibrateWindow(QWidget *parent) :
     connect(a_save, SIGNAL(triggered(bool)),this,SLOT(save_clicked()));
     connect(a_corner, SIGNAL(triggered(bool)),this,SLOT(cornerdetect_clicked(bool)));
     connect(a_edge, SIGNAL(triggered(bool)),this,SLOT(edgedetect_clicked(bool)));
-    connect(a_mix, SIGNAL(triggered(bool)),this,SLOT(mix_clicked(bool)));
     connect(a_loop, SIGNAL(triggered(bool)),this,SLOT(loop_clicked(bool)));
     connect(a_bijoo, SIGNAL(triggered(bool)),this,SLOT(bijoo_clicked(bool)));
+    connect(a_equal, SIGNAL(triggered(bool)),this,SLOT(equal_clicked(bool)));
     connect(a_replace, SIGNAL(triggered(bool)),this,SLOT(replace_clicked()));
 
     openImage();
@@ -64,41 +64,51 @@ void CalibrateWindow::state_change(int changed)
 	{
     	if (image != NULL)
     	{
+            if ( chk2_state )
+            {
+                if (a_equal->isChecked())
+                {
+                    treshold_4 = treshold_3;
+                    vslider2->setEnabled(false);
+                }
+                else
+                {
+                    vslider2->setEnabled(true);
+                    treshold_4 = vslider2->value();
+                }
+                imgout = cvCreateImage(cvGetSize(image),image->depth,image->nChannels);
+                cvErode( image, imgout , NULL , treshold_3 );
+                cvDilate( imgout, imgout , NULL , treshold_4 );
+                imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
+                surface->setPixmap(QPixmap::fromImage(imageView));
+            }
         	if (treshold_1 == 0 && treshold_2 == 0 )
         	{
 				if ( chk2_state )
-				{
-                    imgout = cvCreateImage(cvGetSize(image),image->depth,image->nChannels);
-                    cvErode( image, imgout , NULL , treshold_3 );
-                    cvDilate( imgout, imgout , NULL , treshold_4 );
+                {
                     imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
-                    surface->setPixmap(QPixmap::fromImage(imageView));
 				}
 				else
 				{
                     imageView = QImage((const unsigned char*)(imagesrc->imageData), imagesrc->width,imagesrc->height,QImage::Format_RGB888).rgbSwapped();
-            		surface->setPixmap(QPixmap::fromImage(imageView));
-				}
+                }
         	}
         	else
         	{
 				if ( chk2_state )
-				{
-            		IplImage* buffer = cvCreateImage(cvGetSize(image),image->depth,image->nChannels);
-					cvErode( image, buffer , NULL , treshold_3 );
-					cvDilate( buffer, buffer , NULL , treshold_4 );
-                    imgout = doCanny( buffer, treshold_1 ,treshold_2, 3 );
+                {
+                    IplImage* buffer = imgout;
+                    imgout = doCanny( imgout, treshold_1 ,treshold_2, 3 );
                     imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
-            		surface->setPixmap(QPixmap::fromImage(imageView));
                     cvReleaseImage( &buffer );
 				}
 				else
                 {
                     imgout = doCanny( image, treshold_1 ,treshold_2, 3 );
                     imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
-                    surface->setPixmap(QPixmap::fromImage(imageView));
 				}
-        	}
+            }
+            surface->setPixmap(QPixmap::fromImage(imageView));
             chk1->setText("Proportion 3");
             chk2->setText("Dilute & Erode");
     	}
@@ -107,38 +117,6 @@ void CalibrateWindow::state_change(int changed)
         vslider1->setMaximum(30);
         vslider2->setMaximum(30);
         vslider1->setEnabled(true);
-        vslider2->setEnabled(true);
-    }
-    else if (a_mix->isChecked())
-	{
-		if (image != NULL)
-    	{
-        	if (treshold_1 == 0 && treshold_2 == 0 )
-        	{
-                imageView = QImage((const unsigned char*)(imagesrc->imageData), imagesrc->width,imagesrc->height,QImage::Format_RGB888).rgbSwapped();
-            	surface->setPixmap(QPixmap::fromImage(imageView));
-        	}
-        	else
-        	{
-                imgout = cvCreateImage(cvGetSize(image),image->depth,image->nChannels);
-				if (chk1->isChecked())
-				{
-                    cvDilate( image, imgout , NULL , treshold_1 );
-                    cvErode( imgout, imgout , NULL , treshold_2 );
-				}
-				else
-				{
-                    cvErode( image, imgout , NULL , treshold_1 );
-                    cvDilate( imgout, imgout , NULL , treshold_2 );
-				}
-                imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
-                surface->setPixmap(QPixmap::fromImage(imageView));
-        	}
-    	}
-		chk1->setText("Reverse");
-		chk2->setText("Dilute=Erode");
-		slider1->setMaximum(30);
-		slider2->setMaximum(30);
     }
     else if (a_corner->isChecked())
     {
@@ -247,7 +225,7 @@ void CalibrateWindow::slider1_change(int value)
 		{
         	slider2->setValue(value/3);
         }
-        else if (a_mix->isChecked())
+        else if (a_corner->isChecked())
 		{
         	;
 		}
@@ -262,7 +240,7 @@ void CalibrateWindow::slider1_change(int value)
 		{
         	;
         }
-        else if (a_mix->isChecked())
+        else if (a_corner->isChecked())
 		{
         	slider2->setValue(value);
 		}
@@ -307,7 +285,7 @@ void CalibrateWindow::chk1_change(int value)
 			slider2->setValue(slider1->value()/3);
         	slider2->setEnabled(!chk1_state);
         }
-        else if (a_mix->isChecked())
+        else if (a_corner->isChecked())
 		{
             state_change();
 		}
@@ -318,7 +296,7 @@ void CalibrateWindow::chk1_change(int value)
         {
         	slider2->setEnabled(!chk1_state);
         }
-        else if (a_mix->isChecked())
+        else if (a_corner->isChecked())
 		{
 			state_change();
 		}
@@ -334,7 +312,7 @@ void CalibrateWindow::chk2_change(int value)
         {
 			state_change();
         }
-        else if (a_mix->isChecked())
+        else if (a_corner->isChecked())
 		{
 			slider2->setValue(slider1->value());
         	slider2->setEnabled(!chk2_state);
@@ -346,7 +324,7 @@ void CalibrateWindow::chk2_change(int value)
         {
         	state_change();
         }
-        else if (a_mix->isChecked())
+        else if (a_corner->isChecked())
 		{
 			slider2->setEnabled(!chk2_state);	
 		}
@@ -394,7 +372,6 @@ void CalibrateWindow::cornerdetect_clicked(bool state)
     if (state)
     {
         a_edge->setChecked(false);
-        a_mix->setChecked(false);
         a_loop->setChecked(false);
         a_bijoo->setChecked(false);
         state_change(1);
@@ -410,7 +387,6 @@ void CalibrateWindow::edgedetect_clicked(bool state)
     if (state)
     {
         a_corner->setChecked(false);
-        a_mix->setChecked(false);
         a_loop->setChecked(false);
         a_bijoo->setChecked(false);
         state_change(1);
@@ -426,7 +402,6 @@ void CalibrateWindow::bijoo_clicked(bool state)
     if (state)
     {
         a_corner->setChecked(false);
-        a_mix->setChecked(false);
         a_loop->setChecked(false);
         a_edge->setChecked(false);
         state_change(1);
@@ -437,19 +412,15 @@ void CalibrateWindow::bijoo_clicked(bool state)
     }
 }
 
-void CalibrateWindow::mix_clicked(bool state)
+void CalibrateWindow::equal_clicked(bool state)
 {
     if (state)
     {
-        a_edge->setChecked(false);
-        a_corner->setChecked(false);
-        a_loop->setChecked(false);
-        a_bijoo->setChecked(false);
-        state_change(1);
+        state_change(0);
     }
     else
     {
-        a_mix->setChecked(true);
+        state_change(0);
     }
 }
 
@@ -459,7 +430,6 @@ void CalibrateWindow::loop_clicked(bool state)
     {
         a_edge->setChecked(false);
         a_corner->setChecked(false);
-        a_mix->setChecked(false);
         a_bijoo->setChecked(false);
         state_change(1);
         vslider1->setValue(9);
@@ -482,7 +452,6 @@ void CalibrateWindow::CreateMenu()
 
     mode_menu = menu->addMenu("Mode");
     a_edge = mode_menu->addAction("Edge Detection");
-    a_mix = mode_menu->addAction("Erode + Dilute");
     a_corner = mode_menu->addAction("Corner Detection");
     a_loop = mode_menu->addAction("Loop Detection");
     a_bijoo =  mode_menu->addAction("Bijoo Filter");
@@ -491,13 +460,13 @@ void CalibrateWindow::CreateMenu()
     a_equal = option_menu->addAction("Erode = Dilute");
 
     a_edge->setCheckable(true);
-    a_mix->setCheckable(true);
     a_loop->setCheckable(true);
     a_corner->setCheckable(true);
     a_bijoo->setCheckable(true);
     a_equal->setCheckable(true);
 
     a_edge->setChecked(true);
+    a_equal->setChecked(true);
 
     help_menu = menu->addMenu("Help");
     a_about = help_menu->addAction("About");

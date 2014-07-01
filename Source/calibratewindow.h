@@ -29,9 +29,9 @@ private slots:
     void state_change(int changed = 0);
     void cornerdetect_clicked(bool);
     void edgedetect_clicked(bool);
-    void mix_clicked(bool);
     void loop_clicked(bool);
     void bijoo_clicked(bool);
+    void equal_clicked(bool);
     void next_clicked();
 
 private:
@@ -57,7 +57,6 @@ private:
     QAction		 *a_save;
     QAction		 *a_replace;
     QAction		 *a_edge;
-    QAction		 *a_mix;
     QAction		 *a_corner;
     QAction		 *a_loop;
     QAction		 *a_about;
