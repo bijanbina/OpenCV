@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <opencv/highgui.h>
+#include <unistd.h>
 #include <QtWidgets>
 #include <cv.h>
 
@@ -24,7 +25,7 @@ private slots:
     void chk2_change(int);
     void open_clicked();
     void save_clicked();
-    void calibrate_clicked();
+    void replace_clicked();
     void state_change(int changed = 0);
     void cornerdetect_clicked(bool);
     void edgedetect_clicked(bool);
@@ -32,12 +33,14 @@ private slots:
     void dilute_clicked(bool);
     void mix_clicked(bool);
     void loop_clicked(bool);
+    void bijoo_clicked(bool);
     void next_clicked();
 
 private:
     void CreateLayout();
     void CreateMenu();
     void openImage();
+    void bijoo_filter(IplImage *in,int kernel_size);
     void trLoop(CvMat *in,CvMat *out);
     void find_corner(IplImage* in ,double quality_level ,double min_distance ,int MAX_CORNERS , double k) ;
     void MyFilledCircle( cv::Mat img, cv::Point center );
@@ -53,7 +56,7 @@ private:
     QMenu		 *help_menu;
     QAction		 *a_open;
     QAction		 *a_save;
-    QAction		 *a_next;
+    QAction		 *a_replace;
     QAction		 *a_edge;
     QAction		 *a_dilute;
     QAction		 *a_erode;
@@ -61,6 +64,7 @@ private:
     QAction		 *a_corner;
     QAction		 *a_loop;
     QAction		 *a_about;
+    QAction		 *a_bijoo;
     IplImage     *image;
     IplImage     *imgout;
     IplImage     *imagesrc; 
@@ -84,9 +88,9 @@ private:
     QHBoxLayout  *option_layout;
     QHBoxLayout  *chkbox_layout;
     QHBoxLayout  *button_layout;
-    QPushButton  *open_btn;
-    QPushButton  *save_btn;
-    QPushButton  *calibrate_btn;
+    QPushButton  *back_btn;
+    QPushButton  *next_btn;
+    QPushButton  *replace_btn;
     double        treshold_1;
     double        treshold_2;
     double        treshold_3;
