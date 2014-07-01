@@ -13,10 +13,12 @@ TARGET = openCV
 
 SOURCES += main.cpp\
         mainwindow.cpp\
-	calibratewindow.cpp
+	calibratewindow.cpp \
+    trmmosbat.cpp
 
 HEADERS  += mainwindow.h\
-	calibratewindow.h
+	calibratewindow.h \
+    trmmosbat.h
 
 PKGCONFIG += opencv
 CONFIG += link_pkgconfig

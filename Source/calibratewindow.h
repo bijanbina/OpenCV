@@ -6,6 +6,8 @@
 #include <unistd.h>
 #include <QtWidgets>
 #include <cv.h>
+#include <trmmosbat.h>
+
 
 class CalibrateWindow : public QMainWindow {
     Q_OBJECT
@@ -27,7 +29,7 @@ private slots:
     void save_clicked();
     void replace_clicked();
     void state_change(int changed = 0);
-    void cornerdetect_clicked(bool);
+    void result_clicked(bool);
     void edgedetect_clicked(bool);
     void loop_clicked(bool);
     void equal_clicked(bool);
@@ -54,7 +56,7 @@ private:
     QAction		 *a_save;
     QAction		 *a_replace;
     QAction		 *a_edge;
-    QAction		 *a_corner;
+    QAction		 *a_result;
     QAction		 *a_loop;
     QAction		 *a_about;
     QAction		 *a_equal;

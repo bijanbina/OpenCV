@@ -18,7 +18,7 @@ CalibrateWindow::CalibrateWindow(QWidget *parent) :
 
     connect(a_open, SIGNAL(triggered(bool)),this,SLOT(open_clicked()));
     connect(a_save, SIGNAL(triggered(bool)),this,SLOT(save_clicked()));
-    connect(a_corner, SIGNAL(triggered(bool)),this,SLOT(cornerdetect_clicked(bool)));
+    connect(a_result, SIGNAL(triggered(bool)),this,SLOT(result_clicked(bool)));
     connect(a_edge, SIGNAL(triggered(bool)),this,SLOT(edgedetect_clicked(bool)));
     connect(a_loop, SIGNAL(triggered(bool)),this,SLOT(loop_clicked(bool)));
     connect(a_equal, SIGNAL(triggered(bool)),this,SLOT(equal_clicked(bool)));
@@ -117,32 +117,6 @@ void CalibrateWindow::state_change(int changed)
         vslider2->setMaximum(30);
         vslider1->setEnabled(true);
     }
-    else if (a_corner->isChecked())
-    {
-        if (image != NULL)
-        {
-            if (treshold_1 == 0 && treshold_2 == 0 )
-            {
-                imageView = QImage((const unsigned char*)(imagesrc->imageData), imagesrc->width,imagesrc->height,QImage::Format_RGB888).rgbSwapped();
-                surface->setPixmap(QPixmap::fromImage(imageView));
-            }
-            else
-            {
-                double quality_level = treshold_1/1000.0;
-                double min_distance = treshold_3/10.0;
-                int maxCorner = 100;
-                double k = treshold_2/100.0;
-                IplImage* input=cvCloneImage(image);
-                find_corner(input,quality_level,min_distance,maxCorner,k);
-            }
-        }
-        chk1->setText("NULL");
-        chk2->setText("NULL");
-        slider1->setMaximum(900);
-        slider2->setMaximum(900);
-        vslider1->setMaximum(1000);
-        vslider2->setEnabled(false);
-    }
     else if (a_loop->isChecked())
     {
         if (image != NULL)
@@ -161,8 +135,8 @@ void CalibrateWindow::state_change(int changed)
             {
                 cvZero( imgout );
             }
-            CvSeq* dummy_seq = firstContour;
-            CvSeq  *poly = NULL;
+            CvSeq *dummy_seq = firstContour;
+            CvSeq *poly = NULL;
 
             int i = 0;
             while( dummy_seq != NULL )
@@ -192,6 +166,33 @@ void CalibrateWindow::state_change(int changed)
         vslider1->setEnabled(true);
         vslider2->setEnabled(true);
     }
+    else if (a_result->isChecked())
+    {
+        if (image != NULL)
+        {
+            if (treshold_1 == 0 && treshold_2 == 0 )
+            {
+                imageView = QImage((const unsigned char*)(imagesrc->imageData), imagesrc->width,imagesrc->height,QImage::Format_RGB888).rgbSwapped();
+                surface->setPixmap(QPixmap::fromImage(imageView));
+            }
+            else
+            {
+                //trmMosbat tns = trmMosbat(poly);
+                double quality_level = treshold_1/1000.0;
+                double min_distance = treshold_3/10.0;
+                int maxCorner = 100;
+                double k = treshold_2/100.0;
+                IplImage* input=cvCloneImage(image);
+                find_corner(input,quality_level,min_distance,maxCorner,k);
+            }
+        }
+        chk1->setText("NULL");
+        chk2->setText("NULL");
+        slider1->setMaximum(900);
+        slider2->setMaximum(900);
+        vslider1->setMaximum(1000);
+        vslider2->setEnabled(false);
+    }
 	else
 	{
 		;
@@ -206,7 +207,7 @@ void CalibrateWindow::slider1_change(int value)
 		{
         	slider2->setValue(value/3);
         }
-        else if (a_corner->isChecked())
+        else if (a_result->isChecked())
 		{
         	;
 		}
@@ -221,9 +222,9 @@ void CalibrateWindow::slider1_change(int value)
 		{
         	;
         }
-        else if (a_corner->isChecked())
+        else if (a_result->isChecked())
 		{
-        	slider2->setValue(value);
+            ;
 		}
     }
     else
@@ -265,7 +266,7 @@ void CalibrateWindow::chk1_change()
 			slider2->setValue(slider1->value()/3);
             slider2->setEnabled(!chk1->isChecked());
         }
-        else if (a_corner->isChecked())
+        else if (a_result->isChecked())
 		{
             ;
 		}
@@ -276,7 +277,7 @@ void CalibrateWindow::chk1_change()
         {
             slider2->setEnabled(!chk1->isChecked());
         }
-        else if (a_corner->isChecked())
+        else if (a_result->isChecked())
 		{
             ;
 		}
@@ -292,10 +293,9 @@ void CalibrateWindow::chk2_change()
         {
             ;
         }
-        else if (a_corner->isChecked())
+        else if (a_result->isChecked())
 		{
-			slider2->setValue(slider1->value());
-            slider2->setEnabled(!chk2->isChecked());
+            ;
 		}
 	}
 	else
@@ -304,9 +304,9 @@ void CalibrateWindow::chk2_change()
         {
             ;
         }
-        else if (a_corner->isChecked())
+        else if (a_result->isChecked())
 		{
-            slider2->setEnabled(!chk2->isChecked());
+            ;
 		}
 	}
     state_change();
@@ -336,9 +336,16 @@ void CalibrateWindow::next_clicked()
     {
         a_loop->setChecked(true);
         a_edge->setChecked(false);
-        a_corner->setChecked(false);
+        a_result->setChecked(false);
         state_change(1);
         vslider1->setValue(9);
+    }
+    else if (a_loop->isChecked())
+    {
+        a_loop->setChecked(false);
+        a_edge->setChecked(false);
+        a_result->setChecked(true);
+        state_change(1);
     }
 }
 
@@ -364,7 +371,7 @@ void CalibrateWindow::open_clicked()
 	}
 }
 
-void CalibrateWindow::cornerdetect_clicked(bool state)
+void CalibrateWindow::result_clicked(bool state)
 {
     if (state)
     {
@@ -374,7 +381,7 @@ void CalibrateWindow::cornerdetect_clicked(bool state)
     }
     else
     {
-        a_corner->setChecked(true);
+        a_result->setChecked(true);
     }
 }
 
@@ -382,7 +389,7 @@ void CalibrateWindow::edgedetect_clicked(bool state)
 {
     if (state)
     {
-        a_corner->setChecked(false);
+        a_result->setChecked(false);
         a_loop->setChecked(false);
         state_change(1);
     }
@@ -409,7 +416,7 @@ void CalibrateWindow::loop_clicked(bool state)
     if (state)
     {
         a_edge->setChecked(false);
-        a_corner->setChecked(false);
+        a_result->setChecked(false);
         state_change(1);
         vslider1->setValue(9);
     }
@@ -431,15 +438,15 @@ void CalibrateWindow::CreateMenu()
 
     mode_menu = menu->addMenu("Mode");
     a_edge = mode_menu->addAction("Edge Detection");
-    a_corner = mode_menu->addAction("Corner Detection");
     a_loop = mode_menu->addAction("Loop Detection");
+    a_result = mode_menu->addAction("Result");
 
     option_menu = menu->addMenu("Option");
     a_equal = option_menu->addAction("Erode = Dilute");
 
     a_edge->setCheckable(true);
     a_loop->setCheckable(true);
-    a_corner->setCheckable(true);
+    a_result->setCheckable(true);
     a_equal->setCheckable(true);
 
     a_edge->setChecked(true);
