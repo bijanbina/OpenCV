@@ -205,12 +205,13 @@ void CalibrateWindow::state_change(int changed)
                     if (poly->total == 12)
                     {
                         i++;
-                        current_plus->next = new trmMosbat(poly);
+                        current_plus->next = new trmMosbat(poly,0);
                         current_plus = current_plus->next;
                         cv::Mat mat_temp = imgclone;
                         cv::circle( mat_temp, current_plus->top1, 10.0, 255, 3, 1 );
-                        cv::circle( mat_temp, current_plus->top2, 10.0, 255, 3, 1 );
-                        cv::circle( mat_temp, current_plus->center4, 10.0, 255, 3, 1 );
+                        cv::circle( mat_temp, current_plus->down1, 10.0, 255, 3, 1 );
+                        cv::circle( mat_temp, current_plus->center1, 10.0, 255, 3, 1 );
+                        cv::circle( mat_temp, current_plus->center3, 10.0, 255, 3, 1 );
                     }
                     dummy_seq = dummy_seq->h_next;
                 }

@@ -3,12 +3,18 @@
 
 #include <QtWidgets>
 #include <cv.h>
+#include <math.h>
+
+#define PI 3.14159265
 
 class trmMosbat
 {
 public:
-    trmMosbat(CvSeq *points);
+    trmMosbat(CvSeq *points,double previous);
     trmMosbat();
+    double findAngle();
+    double findDerivative(CvPoint pt1, CvPoint pt2, CvPoint pt3, CvPoint pt4);
+    CvPoint *getRect(); //return rectangle which contain plus
 
     CvPoint top1;
     CvPoint top2;
@@ -24,6 +30,10 @@ public:
     CvPoint center4;
     CvPoint middle;
     trmMosbat *next;
+
+private:
+    CvPoint *rect;
+    double   pr;//previeos angle
 };
 
 #endif // TRMMOSBAT_H

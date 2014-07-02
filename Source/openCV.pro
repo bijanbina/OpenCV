@@ -24,6 +24,6 @@ PKGCONFIG += opencv
 CONFIG += link_pkgconfig
 
 INCLUDEPATH      = /usr/include/qwt
-LIBS        += -lqwt
+LIBS        += -lqwt -lm
 QMAKE_CXXFLAGS += -g
 #QMAKE_CXXFLAGS += -E
