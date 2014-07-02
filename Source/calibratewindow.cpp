@@ -163,34 +163,66 @@ void CalibrateWindow::state_change(int changed)
         slider2->setMaximum(5);
         vslider1->setMaximum(100);
         vslider2->setMaximum(50);
+        slider1->setEnabled(chk1->isChecked());
+        slider2->setEnabled(false);
         vslider1->setEnabled(true);
-        vslider2->setEnabled(true);
+        vslider2->setEnabled(false);
     }
     else if (a_result->isChecked())
     {
         if (image != NULL)
         {
-            if (treshold_1 == 0 && treshold_2 == 0 )
+            if (filter_param.edge_1 == filter_param.edge_2 && filter_param.edge_2 == 0 )
             {
                 imageView = QImage((const unsigned char*)(imagesrc->imageData), imagesrc->width,imagesrc->height,QImage::Format_RGB888).rgbSwapped();
                 surface->setPixmap(QPixmap::fromImage(imageView));
             }
             else
             {
-                //trmMosbat tns = trmMosbat(poly);
-                double quality_level = treshold_1/1000.0;
-                double min_distance = treshold_3/10.0;
-                int maxCorner = 100;
-                double k = treshold_2/100.0;
-                IplImage* input=cvCloneImage(image);
-                find_corner(input,quality_level,min_distance,maxCorner,k);
+                IplImage *imgclone = cvCreateImage( cvGetSize(imagesrc), 8, 1 );
+                cvCvtColor( imagesrc, imgclone, CV_BGR2GRAY );
+                if (filter_param.erode)
+                    cvErode( imgclone, imgclone , NULL , filter_param.erode );
+                if (filter_param.dilute)
+                    cvDilate( imgclone, imgclone , NULL , filter_param.dilute );
+                IplImage *buffer = imgclone;
+                imgclone = doCanny( imgclone, filter_param.edge_1 ,filter_param.edge_2, 3 );
+                cvReleaseImage( &buffer );
+                if (filter_param.bold)
+                    bold_filter(imgclone,filter_param.bold);
+                CvSeq* firstContour = NULL;
+                CvMemStorage* cnt_storage = cvCreateMemStorage();
+                cvFindContours(imgclone,cnt_storage,&firstContour,sizeof(CvContour),CV_RETR_TREE,CV_CHAIN_APPROX_SIMPLE);
+                CvMemStorage* poly_storage = cvCreateMemStorage();
+                CvSeq *dummy_seq = firstContour;
+                CvSeq *poly = NULL;
+                trmMosbat *first_plus = new trmMosbat;
+                trmMosbat *current_plus = first_plus;
+                int i = 0;
+                while( dummy_seq != NULL )
+                {
+                    poly = cvApproxPoly(dummy_seq,sizeof(CvContour),poly_storage, CV_POLY_APPROX_DP,filter_param.corner_min);
+                    if (poly->total == 12)
+                    {
+                        i++;
+                        current_plus->next = new trmMosbat(poly);
+                        current_plus = current_plus->next;
+                        cv::Mat mat_temp = imgclone;
+                        cv::circle( mat_temp, current_plus->top1, 10.0, 255, 3, 1 );
+                        cv::circle( mat_temp, current_plus->top2, 10.0, 255, 3, 1 );
+                        cv::circle( mat_temp, current_plus->center4, 10.0, 255, 3, 1 );
+                    }
+                    dummy_seq = dummy_seq->h_next;
+                }
+                imageView = QImage((const unsigned char*)(imgclone->imageData), imgclone->width,imgclone->height,QImage::Format_Indexed8).rgbSwapped();
+                surface->setPixmap(QPixmap::fromImage(imageView));
             }
         }
         chk1->setText("NULL");
         chk2->setText("NULL");
-        slider1->setMaximum(900);
-        slider2->setMaximum(900);
-        vslider1->setMaximum(1000);
+        slider1->setEnabled(false);
+        slider2->setEnabled(false);
+        vslider1->setEnabled(false);
         vslider2->setEnabled(false);
     }
 	else
@@ -266,8 +298,8 @@ void CalibrateWindow::chk1_change()
 			slider2->setValue(slider1->value()/3);
             slider2->setEnabled(!chk1->isChecked());
         }
-        else if (a_result->isChecked())
-		{
+        else if (a_loop->isChecked())
+        {
             ;
 		}
     }
@@ -277,7 +309,7 @@ void CalibrateWindow::chk1_change()
         {
             slider2->setEnabled(!chk1->isChecked());
         }
-        else if (a_result->isChecked())
+        else if (a_loop->isChecked())
 		{
             ;
 		}
@@ -326,14 +358,15 @@ void CalibrateWindow::next_clicked()
     if (imgout != NULL)
     {
         cvReleaseImage(&image);
-        cvReleaseImage(&imagesrc);
         image = imgout;
-        imagesrc = cvCreateImage( cvGetSize(image), 8, 3 );
-        cvCvtColor( image, imagesrc, CV_GRAY2BGR );
         imgout = NULL;
     }
     if (a_edge->isChecked())
     {
+        filter_param.edge_1 = treshold_1;
+        filter_param.edge_2 = treshold_2;
+        filter_param.erode = treshold_3;
+        filter_param.dilute = treshold_4;
         a_loop->setChecked(true);
         a_edge->setChecked(false);
         a_result->setChecked(false);
@@ -342,6 +375,8 @@ void CalibrateWindow::next_clicked()
     }
     else if (a_loop->isChecked())
     {
+        filter_param.bold = treshold_1;
+        filter_param.corner_min = treshold_3;
         a_loop->setChecked(false);
         a_edge->setChecked(false);
         a_result->setChecked(true);
@@ -522,10 +557,18 @@ void CalibrateWindow::CreateLayout()
     main_layout->addLayout(button_layout);
     //Side object
     file_name = "/home/bijan/Downloads/IMG_20140630_213804.jpg";
+    //default
 	treshold_1 = 0;
 	treshold_2 = 0;
     treshold_3 = 0;
     treshold_4 = 0;
+
+    filter_param.bold = 0;
+    filter_param.erode = 0;
+    filter_param.dilute = 0;
+    filter_param.edge_1 = 0;
+    filter_param.edge_2 = 0;
+    filter_param.corner_min = 0;
     //Window
     Main_Widget->setLayout(main_layout);
     setWindowTitle(trUtf8("Calibration"));

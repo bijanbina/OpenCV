@@ -8,11 +8,12 @@ class trmMosbat
 {
 public:
     trmMosbat(CvSeq *points);
+    trmMosbat();
 
     CvPoint top1;
     CvPoint top2;
-    CvPoint below1;
-    CvPoint below2;
+    CvPoint down1;
+    CvPoint down2;
     CvPoint left1;
     CvPoint left2;
     CvPoint right1;
@@ -21,6 +22,8 @@ public:
     CvPoint center2;
     CvPoint center3;
     CvPoint center4;
+    CvPoint middle;
+    trmMosbat *next;
 };
 
 #endif // TRMMOSBAT_H

@@ -8,6 +8,17 @@
 #include <cv.h>
 #include <trmmosbat.h>
 
+struct trm_param
+{
+    double edge_1;
+    double edge_2;
+    int erode;
+    int dilute;
+    int bold;
+    int corner_min;
+};
+
+typedef trm_param trmParam;
 
 class CalibrateWindow : public QMainWindow {
     Q_OBJECT
@@ -91,6 +102,7 @@ private:
     double        treshold_3;
     double        treshold_4;
     char		 *file_name;
+    trmParam      filter_param;
 };
 
 
