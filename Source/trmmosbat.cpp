@@ -15,7 +15,7 @@ trmMosbat::trmMosbat(CvSeq *points,double previous)
     center4.y = 9999;
 
     //find centers
-    for( int i=0; i<points->total; i++ )
+    for( int i=0; i < points->total; i++ )
     {
         CvPoint *p = (CvPoint*)cvGetSeqElem ( points, i );
         middle.x += p->x;
@@ -28,7 +28,7 @@ trmMosbat::trmMosbat(CvSeq *points,double previous)
         ID = 0;
         CvPoint *temp = (CvPoint*)cvGetSeqElem ( points, 0 );
         CvPoint *p;
-        for( int j=1; j<points->total; j++ )
+        for( int j=1; j < points->total; j++ )
         {
             p = (CvPoint*)cvGetSeqElem ( points, j );
             if ( dist_cv(middle,*p) < dist_cv(middle,*temp) )
@@ -37,7 +37,7 @@ trmMosbat::trmMosbat(CvSeq *points,double previous)
                 ID = j;
             }
         }
-        if ( temp->y >= middle.y )
+        if ( temp->y <= middle.y )
         {
             if (center1.x == 9999)
             {
@@ -187,8 +187,13 @@ trmMosbat::trmMosbat(CvSeq *points,double previous)
     }
 
     pr = previous;
-    rect = (CvPoint *)malloc(4 * sizeof(CvPoint));
-    edge = (dist_cv(top2,center2) + dist_cv(right1,center2) + dist_cv(right2,center3) + dist_cv(down2,center3) + dist_cv(down1,center4) + dist_cv(left2,center4) + dist_cv(left1,center1))/4.0;
+    rect = (CvPoint *)malloc( 10 * sizeof (CvPoint));
+    edge = (dist_cv(top2,center2) + dist_cv(right1,center2) + dist_cv(right2,center3) + dist_cv(down2,center3) + dist_cv(down1,center4) + dist_cv(left2,center4) + dist_cv(left1,center1))/7.0;
+    //edge = dist_cv(right1,center2);
+    rect[0] = cvPoint(0,0);
+    rect[1] = cvPoint(0,0);
+    rect[2] = cvPoint(0,0);
+    rect[3] = cvPoint(0,0);
 }
 
 trmMosbat::trmMosbat()
@@ -212,20 +217,46 @@ CvPoint* trmMosbat::getRect()
 {
     double angle = findAngle();
 
-    double m = tan(angle + 45);
+    double m = tan((angle + 45)/180.0 * PI);
     rect[0] = center1;
     double b = -rect[0].y - m*rect[0].x;
-
-
-    m = tan(angle - 45);
     double d = b + rect[0].y;
-    double x = ((rect[0].x - m * d) + cv::sqrt((rect[0].x - m * d) * (rect[0].x - m * d) + 3 * edge - rect[0].x - d * d))/ (m * m + 1);
+    double b1 = rect[0].x - m * d;
+    double a1 = (m * m + 1);
+    double c1 = ( rect[0].x * rect[0].x  + d * d - 3 * edge * edge);
+    double x = (b1 - cv::sqrt(b1 * b1 - a1 * c1 ))/ a1;
     rect[0].x = x;rect[0].y = - (m * x + b);
+
+    m = tan((angle - 45)/180.0 * PI);
     rect[1] = center2;
+    b = -rect[1].y - m*rect[1].x;
+    d = b + rect[1].y;
+    b1 = rect[1].x - m * d;
+    a1 = (m * m + 1);
+    c1 = ( rect[1].x * rect[1].x  + d * d - 3 * edge * edge);
+    x = (b1 + cv::sqrt(b1 * b1 - a1 * c1 ))/ a1;
+    rect[1].x = x;rect[1].y = - (m * x + b);
 
+
+    m = tan((angle + 45)/180.0 * PI);
     rect[2] = center3;
+    b = -rect[2].y - m*rect[2].x;
+    d = b + rect[2].y;
+    b1 = rect[2].x - m * d;
+    a1 = (m * m + 1);
+    c1 = ( rect[2].x * rect[2].x  + d * d - 3 * edge * edge);
+    x = (b1 + cv::sqrt(b1 * b1 - a1 * c1 ))/ a1;
+    rect[2].x = x;rect[2].y = - (m * x + b);
 
+    m = tan((angle - 45)/180.0 * PI);
     rect[3] = center4;
+    b = -rect[3].y - m*rect[3].x;
+    d = b + rect[3].y;
+    b1 = rect[3].x - m * d;
+    a1 = (m * m + 1);
+    c1 = ( rect[3].x * rect[3].x  + d * d - 3 * edge * edge);
+    x = (b1 - cv::sqrt(b1 * b1 - a1 * c1 ))/ a1;
+    rect[3].x = x;rect[3].y = - (m * x + b);
 
     return rect;
 }

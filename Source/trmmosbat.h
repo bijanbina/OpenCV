@@ -4,6 +4,7 @@
 #include <QtWidgets>
 #include <cv.h>
 #include <math.h>
+#include <iostream>
 
 #define PI 3.14159265
 
