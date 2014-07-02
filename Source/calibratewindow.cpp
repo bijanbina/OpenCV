@@ -208,7 +208,7 @@ void CalibrateWindow::state_change(int changed)
                         current_plus->next = new trmMosbat(poly,0);
                         current_plus = current_plus->next;
                         cv::Mat mat_temp = imgclone;
-                        cv::circle( mat_temp, current_plus->top1, 10.0, 255, 3, 1 );
+                        cv::circle( mat_temp, *(current_plus->getRect()), 10.0, 255, 3, 1 );
                         cv::circle( mat_temp, current_plus->down1, 10.0, 255, 3, 1 );
                         cv::circle( mat_temp, current_plus->center1, 10.0, 255, 3, 1 );
                         cv::circle( mat_temp, current_plus->center3, 10.0, 255, 3, 1 );

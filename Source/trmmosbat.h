@@ -32,7 +32,10 @@ public:
     trmMosbat *next;
 
 private:
+    double dist_cv(CvPoint pt1, CvPoint pt2);
+
     CvPoint *rect;
+    double   edge;
     double   pr;//previeos angle
 };
 
