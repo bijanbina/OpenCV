@@ -12,7 +12,7 @@ CalibrateWindow::CalibrateWindow(QWidget *parent) :
     connect(vslider2,SIGNAL(valueChanged(int)), this, SLOT(slider4_change(int)));
     connect(chk1,SIGNAL(stateChanged(int)), this, SLOT(chk1_change()));
     connect(chk2,SIGNAL(stateChanged(int)), this, SLOT(chk2_change()));
-    connect(back_btn, SIGNAL(released()), this, SLOT(open_clicked()));
+    connect(back_btn, SIGNAL(released()), this, SLOT(back_clicked()));
     connect(next_btn, SIGNAL(released()), this, SLOT(next_clicked()));
     connect(replace_btn, SIGNAL(released()), this, SLOT(replace_clicked()));
 
@@ -199,24 +199,28 @@ void CalibrateWindow::state_change(int changed)
                 trmMosbat *first_plus = new trmMosbat;
                 trmMosbat *current_plus = first_plus;
                 int i = 0;
+                imgout = cvCloneImage(imagesrc);
+                cv::RNG rng(1234);
                 while( dummy_seq != NULL )
                 {
                     poly = cvApproxPoly(dummy_seq,sizeof(CvContour),poly_storage, CV_POLY_APPROX_DP,filter_param.corner_min);
+                    CvScalar color = cvScalar(rng.uniform(0,255), rng.uniform(0, 255), rng.uniform(0, 255));
                     if (poly->total == 12)
                     {
                         i++;
                         current_plus->next = new trmMosbat(poly,0);
                         current_plus = current_plus->next;
-                        cv::Mat mat_temp = imagesrc;
-                        cv::line(mat_temp,(current_plus->getRect())[0],(current_plus->getRect())[1],cvScalar(25,25,200),3);
-                        cv::line(mat_temp,(current_plus->getRect())[1],(current_plus->getRect())[2],cvScalar(25,25,200),3);
-                        cv::line(mat_temp,(current_plus->getRect())[2],(current_plus->getRect())[3],cvScalar(25,25,200),3);
-                        cv::line(mat_temp,(current_plus->getRect())[3],(current_plus->getRect())[0],cvScalar(25,25,200),3);
+                        cv::Mat mat_temp = imgout;
+                        cv::line(mat_temp,(current_plus->getRect())[0],(current_plus->getRect())[1],color,2,16);
+                        cv::line(mat_temp,(current_plus->getRect())[1],(current_plus->getRect())[2],color,2,16);
+                        cv::line(mat_temp,(current_plus->getRect())[2],(current_plus->getRect())[3],color,2,16);
+                        cv::line(mat_temp,(current_plus->getRect())[3],(current_plus->getRect())[0],color,2,16);
+                        //cv::line(mat_temp,current_plus->center2,current_plus->center3,cvScalar(25,25,200),3);
                         cv::circle( mat_temp, current_plus->middle, 10.0, 255, 3, 1 );
                     }
                     dummy_seq = dummy_seq->h_next;
                 }
-                imageView = QImage((const unsigned char*)(imagesrc->imageData), imagesrc->width,imagesrc->height,QImage::Format_RGB888).rgbSwapped();
+                imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_RGB888).rgbSwapped();
                 surface->setPixmap(QPixmap::fromImage(imageView));
             }
         }
@@ -353,6 +357,45 @@ void CalibrateWindow::save_clicked()
     {
 		QPixmap::fromImage(imageView).save(file_name,"PNG",100);
 	}
+}
+
+void CalibrateWindow::back_clicked()
+{
+
+    if (a_loop->isChecked())
+    {
+        if (image != NULL)
+        {
+            cvReleaseImage(&image);
+        }
+        image = cvCreateImage( cvGetSize(imagesrc), 8, 1 );
+        cvCvtColor( imagesrc, image, CV_BGR2GRAY );
+        a_loop->setChecked(false);
+        a_edge->setChecked(true);
+        a_result->setChecked(false);
+        state_change(1);
+    }
+    else if (a_result->isChecked())
+    {
+        if (image != NULL)
+        {
+            cvReleaseImage(&image);
+        }
+
+        image = cvCreateImage( cvGetSize(imagesrc), 8, 1 );
+        cvCvtColor( imagesrc, image, CV_BGR2GRAY );
+        if (filter_param.erode)
+            cvErode( image, image , NULL , filter_param.erode );
+        if (filter_param.dilute)
+            cvDilate( image, image , NULL , filter_param.dilute );
+        IplImage *buffer = image;
+        image = doCanny( image, filter_param.edge_1 ,filter_param.edge_2, 3 );
+        cvReleaseImage( &buffer );
+        a_loop->setChecked(true);
+        a_edge->setChecked(false);
+        a_result->setChecked(false);
+        state_change(1);
+    }
 }
 
 void CalibrateWindow::next_clicked()
@@ -558,11 +601,12 @@ void CalibrateWindow::CreateLayout()
     main_layout->addLayout(surface_layout);
     main_layout->addLayout(button_layout);
     //Side object
-    file_name = "/home/bijan/Downloads/IMG_20140630_213804.jpg";
+    //file_name = "/home/bijan/Downloads/IMG_20140630_213804.jpg";
+    file_name = "/home/bijan/Pictures/IMG_20140519_090048.jpg";
     //default
-	treshold_1 = 0;
-	treshold_2 = 0;
-    treshold_3 = 0;
+    treshold_1 = 371;
+    treshold_2 = 123;
+    treshold_3 = 11;
     treshold_4 = 0;
 
     filter_param.bold = 0;
@@ -571,6 +615,10 @@ void CalibrateWindow::CreateLayout()
     filter_param.edge_1 = 0;
     filter_param.edge_2 = 0;
     filter_param.corner_min = 0;
+
+//    slider1->setValue(371);
+//    slider1->setValue(123);
+//    vslider1->setValue(11);
     //Window
     Main_Widget->setLayout(main_layout);
     setWindowTitle(trUtf8("Calibration"));

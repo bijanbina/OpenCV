@@ -14,7 +14,7 @@ public:
     trmMosbat(CvSeq *points,double previous);
     trmMosbat();
     double findAngle();
-    double findDerivative(CvPoint pt1, CvPoint pt2, CvPoint pt3, CvPoint pt4);
+    double findDerivative(CvPoint pt1, CvPoint pt2, CvPoint pt3, CvPoint pt4, bool reverse = false);
     CvPoint *getRect(); //return rectangle which contain plus
 
     CvPoint top1;

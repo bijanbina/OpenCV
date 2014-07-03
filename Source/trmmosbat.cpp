@@ -203,8 +203,15 @@ trmMosbat::trmMosbat()
 
 double trmMosbat::findAngle()
 {
-    int gradiant1 = findDerivative(top1,down1,center1,center4);
-    return (atan(gradiant1) * 180 / PI);
+    double gradiant1 = findDerivative(top1,down1,center1,center4,true);
+    gradiant1 += findDerivative(left1,right1,center1,center2);
+    gradiant1 += findDerivative(left2,right2,center3,center4);
+    gradiant1 += findDerivative(top2,down2,center2,center3,true);
+    gradiant1 /= 4.0;
+//    std::cout << findDerivative(top1,down1,center1,center4,true) << " \t " << findDerivative(left1,right1,center1,center2) <<
+//                 " \t "<< findDerivative(left2,right2,center3,center4) << " \t " << findDerivative(top2,down2,center2,center3,true) << std::endl;
+
+    return (90 + (atan(gradiant1) * 180 / PI));
 }
 
 
@@ -261,17 +268,29 @@ CvPoint* trmMosbat::getRect()
     return rect;
 }
 
-double trmMosbat::findDerivative(CvPoint pt1, CvPoint pt2, CvPoint pt3, CvPoint pt4)
+double trmMosbat::findDerivative(CvPoint pt1, CvPoint pt2, CvPoint pt3, CvPoint pt4,bool reverse)
 {
-    double a1 = 4;
-    double a2 = pt1.x + pt2.x + pt3.x + pt4.x;
-    double b1 = a2;
-    double b2 = pt1.x * pt1.x + pt2.x * pt2.x + pt3.x * pt3.x + pt4.x * pt4.x;
-    double c1 = -(pt1.y + pt2.y + pt3.y + pt4.y);
-    double c2 = -(pt1.x * pt1.y + pt2.x * pt2.y + pt3.x * pt3.y + pt4.x * pt4.y);
+    long a1 = 4;
+    long a2 = pt1.x + pt2.x + pt3.x + pt4.x;
+    long b1 = a2;
+    long b2 = pt1.x * pt1.x + pt2.x * pt2.x + pt3.x * pt3.x + pt4.x * pt4.x;
+    long c1 = -(pt1.y + pt2.y + pt3.y + pt4.y);
+    long c2 = -(pt1.x * pt1.y + pt2.x * pt2.y + pt3.x * pt3.y + pt4.x * pt4.y);
 
-    double mat_1 = (a1 * c2 - a2* c1);
-    double mat_2 = (a1 * b2 - a2* b1);
+    if (reverse)
+    {
+        a1 = 4;
+        a2 = -(pt1.y + pt2.y + pt3.y + pt4.y);
+        b1 = a2;
+        b2 = pt1.y * pt1.y + pt2.y * pt2.y + pt3.y * pt3.y + pt4.y * pt4.y;
+        c1 = -(pt1.x + pt2.x + pt3.x + pt4.x);
+        c2 = (pt1.x * pt1.y + pt2.x * pt2.y + pt3.x * pt3.y + pt4.x * pt4.y);
+    }
 
-    return mat_1 / mat_2;
+    double mat_1 = (a1 * c2 - a2 * c1);
+    double mat_2 = (a1 * b2 - a2 * b1);
+
+    double slope = mat_1 / mat_2;
+
+    return slope;
 }

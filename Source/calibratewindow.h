@@ -39,6 +39,7 @@ private slots:
     void open_clicked();
     void save_clicked();
     void replace_clicked();
+    void back_clicked();
     void state_change(int changed = 0);
     void result_clicked(bool);
     void edgedetect_clicked(bool);
