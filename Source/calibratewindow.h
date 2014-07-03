@@ -7,7 +7,6 @@
 #include <QtWidgets>
 #include <cv.h>
 #include <trmmosbat.h>
-#include <json/json.h>
 
 struct trm_param
 {
@@ -74,6 +73,7 @@ private:
     QAction		 *a_loop;
     QAction		 *a_about;
     QAction		 *a_equal;
+    QAction		 *a_frame;
     IplImage     *image;
     IplImage     *imgout;
     IplImage     *imagesrc; 

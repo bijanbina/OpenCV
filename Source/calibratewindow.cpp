@@ -433,30 +433,6 @@ void CalibrateWindow::next_clicked()
     else if (a_result->isChecked())
     {
         /*Creating a json object*/
-        json_object * jobj = json_object_new_object();
-        json_object *jerode = json_object_new_int(filter_param.erode);
-        json_object *jdilute = json_object_new_int(filter_param.dilute);
-        json_object *jbold = json_object_new_int(filter_param.bold);
-        json_object *jcorner_min = json_object_new_int(filter_param.corner_min);
-        json_object *jedge_1 = json_object_new_double(filter_param.edge_1);
-        json_object *jedge_2 = json_object_new_double(filter_param.edge_2);
-
-        /*Form the json object*/
-        /*Each of these is like a key value pair*/
-        json_object_object_add(jobj,"Erode", jerode);
-        json_object_object_add(jobj,"Dilate", jdilute);
-        json_object_object_add(jobj,"Edge Detection Tresh1", jedge_1);
-        json_object_object_add(jobj,"Edge Detection Tresh2", jedge_2);
-        json_object_object_add(jobj,"Bold Filter", jbold);
-        json_object_object_add(jobj,"Corner Min Distance", jcorner_min);
-
-        /*Now printing the json object*/
-        const char *data = json_object_to_json_string(jobj);
-        QFile file;
-        file.setFileName("test.json");
-        file.open(QIODevice::WriteOnly | QIODevice::Text);
-        file.write(data);
-        file.close();
         close();
      }
 

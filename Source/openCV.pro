@@ -14,16 +14,18 @@ TARGET = openCV
 SOURCES += main.cpp\
         mainwindow.cpp\
 	calibratewindow.cpp \
-    trmmosbat.cpp
+    trmmosbat.cpp \
+    json.cpp
 
 HEADERS  += mainwindow.h\
 	calibratewindow.h \
-    trmmosbat.h
+    trmmosbat.h \
+    json.h
 
 PKGCONFIG += opencv
 CONFIG += link_pkgconfig
 
 INCLUDEPATH      = /usr/include/qwt
-LIBS        += -lqwt -lm -ljson
+LIBS        += -lqwt -lm
 QMAKE_CXXFLAGS += -g
 #QMAKE_CXXFLAGS += -E
