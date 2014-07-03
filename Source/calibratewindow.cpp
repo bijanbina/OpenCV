@@ -216,7 +216,8 @@ void CalibrateWindow::state_change(int changed)
                         cv::line(mat_temp,(current_plus->getRect())[2],(current_plus->getRect())[3],color,2,16);
                         cv::line(mat_temp,(current_plus->getRect())[3],(current_plus->getRect())[0],color,2,16);
                         //cv::line(mat_temp,current_plus->center2,current_plus->center3,cvScalar(25,25,200),3);
-                        cv::circle( mat_temp, current_plus->middle, 10.0, 255, 3, 1 );
+                        cv::circle( mat_temp, current_plus->middle, 5.0, 0, 2, 1 );
+                        //drawMark( mat_temp, current_plus->middle, cvScalar(0) );
                     }
                     dummy_seq = dummy_seq->h_next;
                 }
@@ -686,4 +687,11 @@ void CalibrateWindow::bold_filter(IplImage *in,int kernel_size)
             }
         }
     }
+}
+
+void CalibrateWindow::drawMark(cv::Mat img ,CvPoint pt,CvScalar color)
+{
+    int height = floor(img.rows / 100.0);
+    cv::line(img,cvPoint(pt.x - height,pt.y),cvPoint(pt.x + height,pt.y),color,2);
+    cv::line(img,cvPoint(pt.x,pt.y - height),cvPoint(pt.x,pt.y + height),color,2);
 }

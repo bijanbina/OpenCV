@@ -53,6 +53,7 @@ private:
     void openImage();
     void bold_filter(IplImage *in,int kernel_size);
     void find_corner(IplImage* in ,double quality_level ,double min_distance ,int MAX_CORNERS , double k) ;
+    void drawMark(cv::Mat img , CvPoint pt, CvScalar) ;
     void MyFilledCircle( cv::Mat img, cv::Point center );
     IplImage* doCanny( IplImage* in, double lowThresh, double highThresh, double aperture );
 
