@@ -14,15 +14,13 @@ TARGET = openCV
 SOURCES += main.cpp\
         mainwindow.cpp\
 	calibratewindow.cpp \
-    trmmosbat.cpp \
-    json.cpp
+    trmmosbat.cpp
 
 HEADERS  += mainwindow.h\
 	calibratewindow.h \
-    trmmosbat.h \
-    json.h
+    trmmosbat.h
 
-PKGCONFIG += opencv
+PKGCONFIG += opencv jsoncpp
 CONFIG += link_pkgconfig
 
 INCLUDEPATH      = /usr/include/qwt

@@ -7,6 +7,7 @@
 #include <QtWidgets>
 #include <cv.h>
 #include <trmmosbat.h>
+#include <jsoncpp/json/json.h>
 
 struct trm_param
 {

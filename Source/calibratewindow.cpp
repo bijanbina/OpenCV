@@ -36,6 +36,11 @@ void CalibrateWindow::openImage()
 {
     imagesrc = cvLoadImage(file_name);
     image = cvLoadImage(file_name,CV_LOAD_IMAGE_GRAYSCALE);
+
+    slider1->setValue(filter_param.edge_1);
+    slider2->setValue(filter_param.edge_2);
+    vslider1->setValue(filter_param.erode);
+    vslider2->setValue(filter_param.dilute);
 	state_change();
 }
 
@@ -418,7 +423,9 @@ void CalibrateWindow::next_clicked()
         a_edge->setChecked(false);
         a_result->setChecked(false);
         state_change(1);
-        vslider1->setValue(9);
+        vslider1->setValue(filter_param.corner_min);
+        chk1->setChecked(true);
+        slider1->setValue(filter_param.bold);
     }
     else if (a_loop->isChecked())
     {
@@ -433,6 +440,29 @@ void CalibrateWindow::next_clicked()
     else if (a_result->isChecked())
     {
         /*Creating a json object*/
+        // ---- create from scratch ----
+
+        Json::Value json_main;
+        Json::Value edge;
+        edge["Treshold 1"] = filter_param.edge_1;
+        edge["Treshold 2"] = filter_param.edge_2;
+        json_main["Erode"] = filter_param.erode;
+        json_main["Dilate"] = filter_param.dilute;
+        json_main["Bold"] = filter_param.bold;
+        json_main["Corner Minimum Distance"] = filter_param.corner_min;
+        json_main["Edge Detection"] = edge;
+
+        // write in a nice readible way
+        Json::StyledWriter styledWriter;
+        std::string str = styledWriter.write(json_main);
+        std::vector<char> data(str.begin(), str.end());
+        data.push_back('\0');
+        QFile file;
+        file.setFileName("settings.json");
+        file.open(QIODevice::WriteOnly | QIODevice::Text);
+        file.write(data.data());
+        file.close();
+
         close();
      }
 
@@ -614,21 +644,41 @@ void CalibrateWindow::CreateLayout()
     //file_name = "/home/bijan/Downloads/IMG_20140630_213804.jpg";
     file_name = "/home/bijan/Pictures/IMG_20140519_090048.jpg";
     //default
-    treshold_1 = 371;
-    treshold_2 = 123;
-    treshold_3 = 11;
+    treshold_1 = 0;
+    treshold_2 = 0;
+    treshold_3 = 0;
     treshold_4 = 0;
 
-    filter_param.bold = 0;
-    filter_param.erode = 0;
-    filter_param.dilute = 0;
-    filter_param.edge_1 = 0;
-    filter_param.edge_2 = 0;
-    filter_param.corner_min = 0;
+    QFile json_file("settings.json");
+    if(json_file.open(QIODevice::ReadOnly | QIODevice::Text))
+    {
+        Json::Value json_obj;
+        Json::Reader reader;
+        if (reader.parse(QString(json_file.readAll()).toUtf8().data(), json_obj))
+        {
+            filter_param.bold = json_obj.get("Bold",0).asInt();
+            filter_param.erode = json_obj.get("Erode",0).asInt();
+            filter_param.dilute = json_obj.get("Dilate",0).asInt();
+            const Json::Value edge = json_obj["Edge Detection"];
+            if (!edge.empty())
+            {
+                filter_param.edge_1 = edge.get("Treshold 1",0).asDouble();
+                filter_param.edge_2 = edge.get("Treshold 2",0).asDouble();
+            }
+            filter_param.corner_min = json_obj.get("Corner Minimum Distance",0).asInt();
+        }
 
-//    slider1->setValue(371);
-//    slider1->setValue(123);
-//    vslider1->setValue(11);
+    }
+    else
+    {
+        filter_param.bold = 0;
+        filter_param.erode = 0;
+        filter_param.dilute = 0;
+        filter_param.edge_1 = 0;
+        filter_param.edge_2 = 0;
+        filter_param.corner_min = 0;
+    }
+
     //Window
     Main_Widget->setLayout(main_layout);
     setWindowTitle(trUtf8("Calibration"));
