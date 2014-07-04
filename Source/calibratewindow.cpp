@@ -1,7 +1,7 @@
 #include "calibratewindow.h"
 
 CalibrateWindow::CalibrateWindow(QWidget *parent) :
-    QMainWindow(parent)
+    QDialog(parent)
 {
     CreateLayout(parent);
     CreateMenu();
@@ -25,9 +25,10 @@ CalibrateWindow::CalibrateWindow(QWidget *parent) :
     connect(a_equal, SIGNAL(triggered(bool)),this,SLOT(equal_clicked(bool)));
     connect(a_frame, SIGNAL(triggered(bool)),this,SLOT(frame_clicked(bool)));
     connect(a_replace, SIGNAL(triggered(bool)),this,SLOT(replace_clicked()));
+    connect(a_width, SIGNAL(triggered(bool)),this,SLOT(width_clicked()));
 
-    imagesrc = cvLoadImage(file_name);
-    image = cvLoadImage(file_name,CV_LOAD_IMAGE_GRAYSCALE);
+    imagesrc = cvLoadImage(filter_param.filename.toLocal8Bit().data());
+    image = cvLoadImage(filter_param.filename.toLocal8Bit().data(),CV_LOAD_IMAGE_GRAYSCALE);
 
     slider1->setValue(filter_param.edge_1);
     slider2->setValue(filter_param.edge_2);
@@ -64,7 +65,7 @@ void CalibrateWindow::state_change(int changed)
         vslider1->setValue(0);
         vslider2->setValue(0);
     }
-    surface_height = floor((calib_prev_size/image->width)*image->height);
+    surface_height = floor((surface_width/image->width)*image->height);
     if (a_frame->isChecked())
     {
         int frames = (int) cvGetCaptureProperty( capture, CV_CAP_PROP_FRAME_COUNT );
@@ -74,17 +75,18 @@ void CalibrateWindow::state_change(int changed)
         if (treshold_1 + 100 > frames )
             return;
         cvSetCaptureProperty(capture,CV_CAP_PROP_POS_FRAMES,treshold_1);
-        std::cout << cvGrabFrame( capture ) << "\t" << frames << std::endl;
+//        std::cout << cvGrabFrame( capture ) << "\t" << frames << std::endl;
         if (!cvGrabFrame( capture ))
             return;
         imagesrc = cvQueryFrame( capture );
         image = cvCreateImage( cvGetSize(imagesrc), 8, 1 );
         cvCvtColor( imagesrc, image, CV_BGR2GRAY );
         imageView = QImage((const unsigned char*)(imagesrc->imageData), imagesrc->width,imagesrc->height,QImage::Format_RGB888).rgbSwapped();
-        surface->setPixmap(QPixmap::fromImage(imageView.scaled(calib_prev_size,surface_height,Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
+        surface->setPixmap(QPixmap::fromImage(imageView.scaled(surface_width,surface_height,Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
         chk1->setText("NULL");
         chk2->setText("NULL");
         slider1->setMaximum(frames - 100);
+        slider2->setMinimum(200);
         slider2->setMaximum(2000);
         vslider1->setEnabled(false);
         vslider2->setEnabled(false);
@@ -107,7 +109,7 @@ void CalibrateWindow::state_change(int changed)
             cvErode( image, imgout , NULL , treshold_3 );
             cvDilate( imgout, imgout , NULL , treshold_4 );
             imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
-            surface->setPixmap(QPixmap::fromImage(imageView.scaled(calib_prev_size,surface_height,Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
+            surface->setPixmap(QPixmap::fromImage(imageView.scaled(surface_width,surface_height,Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
         }
         if (treshold_1 == 0 && treshold_2 == 0 )
         {
@@ -135,7 +137,7 @@ void CalibrateWindow::state_change(int changed)
                 imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
             }
         }
-        surface->setPixmap(QPixmap::fromImage(imageView.scaled(calib_prev_size,surface_height,Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
+        surface->setPixmap(QPixmap::fromImage(imageView.scaled(surface_width,surface_height,Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
         chk1->setText("Proportion 3");
         chk2->setText("Dilute+Erode");
 		slider1->setMaximum(1000);
@@ -180,7 +182,7 @@ void CalibrateWindow::state_change(int changed)
         }
 
         imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
-        surface->setPixmap(QPixmap::fromImage(imageView.scaled(calib_prev_size,surface_height,Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
+        surface->setPixmap(QPixmap::fromImage(imageView.scaled(surface_width,surface_height,Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
         chk1->setText("Bold Filter");
         chk2->setText("Zero Input");
         slider1->setMaximum(20);
@@ -197,7 +199,7 @@ void CalibrateWindow::state_change(int changed)
         if (filter_param.edge_1 == filter_param.edge_2 && filter_param.edge_2 == 0 )
         {
             imageView = QImage((const unsigned char*)(imagesrc->imageData), imagesrc->width,imagesrc->height,QImage::Format_Indexed8).rgbSwapped();
-            surface->setPixmap(QPixmap::fromImage(imageView.scaled(calib_prev_size,surface_height,Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
+            surface->setPixmap(QPixmap::fromImage(imageView.scaled(surface_width,surface_height,Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
         }
         else
         {
@@ -244,7 +246,7 @@ void CalibrateWindow::state_change(int changed)
                 dummy_seq = dummy_seq->h_next;
             }
             imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_RGB888).rgbSwapped();
-            surface->setPixmap(QPixmap::fromImage(imageView.scaled(calib_prev_size,surface_height,Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
+            surface->setPixmap(QPixmap::fromImage(imageView.scaled(surface_width,surface_height,Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
         }
         chk1->setText("NULL");
         chk2->setText("NULL");
@@ -374,17 +376,35 @@ void CalibrateWindow::chk2_change()
 
 void CalibrateWindow::save_clicked()
 {
-    file_name = QFileDialog::getSaveFileName(this, "Save File", "","").toLocal8Bit().data();
-    if (strcmp(file_name,"") && !imageView.isNull())
+    filter_param.filename = QFileDialog::getSaveFileName(this, "Save File", "","");
+    if (!filter_param.filename.isEmpty() && !imageView.isNull())
     {
-        QPixmap::fromImage(imageView).save(file_name,"PNG",100);
+        QPixmap::fromImage(imageView).save(filter_param.filename.toLocal8Bit().data(),"PNG",100);
 	}
 }
 
 void CalibrateWindow::back_clicked()
 {
-
-    if (a_loop->isChecked())
+    if (a_frame->isChecked())
+    {
+        close();
+    }
+    else if (a_edge->isChecked())
+    {
+        if (a_frame->isEnabled())
+        {
+            a_edge->setChecked(false);
+            a_loop->setChecked(false);
+            a_result->setChecked(false);
+            a_frame->setChecked(true);
+            state_change(1);
+        }
+        else
+        {
+            close();
+        }
+    }
+    else if (a_loop->isChecked())
     {
         if (image != NULL)
         {
@@ -521,16 +541,17 @@ void CalibrateWindow::replace_clicked()
 
 void CalibrateWindow::open_clicked()
 {
-    file_name = QFileDialog::getOpenFileName(this, "Open File", "","Videos (*.mp4 *.avi)").toLocal8Bit().data();
-    if (strcmp(file_name,""))
+    filter_param.filename = QFileDialog::getOpenFileName(this, "Open File", "","Videos (*.mp4 *.avi)");
+    if (!filter_param.filename.isEmpty())
     {
-        capture = cvCreateFileCapture( file_name );
+        capture = cvCreateFileCapture( filter_param.filename.toLocal8Bit().data() );
         if (capture == NULL)
             return;
         imagesrc = cvQueryFrame( capture );
         image = cvCreateImage( cvGetSize(imagesrc), 8, 1 );
-        int diff = surface_height - floor((calib_prev_size/image->width)*image->height);
         cvCvtColor( imagesrc, image, CV_BGR2GRAY );
+        int diff = surface_height - floor((surface_width/image->width)*image->height);
+        chk2->setChecked(false);
         a_frame->setEnabled(true);
         a_frame->setChecked(true);
         a_loop->setChecked(false);
@@ -548,11 +569,11 @@ void CalibrateWindow::open_clicked()
 
 void CalibrateWindow::openimage_clicked()
 {
-    file_name = QFileDialog::getOpenFileName(this, "Open File", "","Images (*.png *.jpg)").toLocal8Bit().data();
-    if (strcmp(file_name,""))
+    filter_param.filename = QFileDialog::getOpenFileName(this, "Open File", "","Images (*.png *.jpg)");
+    if (!filter_param.filename.isEmpty())
     {
-        imagesrc = cvLoadImage(file_name);
-        image = cvLoadImage(file_name,CV_LOAD_IMAGE_GRAYSCALE);
+        imagesrc = cvLoadImage(filter_param.filename.toLocal8Bit().data());
+        image = cvLoadImage(filter_param.filename.toLocal8Bit().data(),CV_LOAD_IMAGE_GRAYSCALE);
         a_frame->setEnabled(false);
         a_frame->setChecked(false);
         a_loop->setChecked(false);
@@ -560,7 +581,7 @@ void CalibrateWindow::openimage_clicked()
         a_result->setChecked(false);
         chk1->setChecked(false);
         slider1->setValue(0);
-        int diff = surface_height - floor((calib_prev_size/image->width)*image->height);
+        int diff = surface_height - floor((surface_width/image->width)*image->height);
         state_change(1);
         slider1->setValue(filter_param.edge_1);
         slider2->setValue(filter_param.edge_2);
@@ -574,6 +595,18 @@ void CalibrateWindow::openimage_clicked()
         setMinimumHeight(minimumHeight()-diff);
         resize(minimumSize());
 	}
+}
+
+void CalibrateWindow::width_clicked()
+{
+    int input = QInputDialog::getInt(this,"Diplay Width","Image Width (200,2000)",surface_width,200,2000);;
+    int diff_x = surface_width - input;
+    surface_width = input;
+    int diff_y = surface_height - floor((surface_width/image->width)*image->height);
+    surface_height = floor((surface_width/image->width)*image->height);
+    state_change();
+    setMinimumSize(minimumWidth() - diff_x,minimumHeight() - diff_y);
+    resize(minimumSize());
 }
 
 void CalibrateWindow::frame_clicked(bool state)
@@ -652,7 +685,8 @@ void CalibrateWindow::loop_clicked(bool state)
 void CalibrateWindow::CreateMenu()
 {
     menu = new QMenuBar (this);
-    setMenuBar(menu);
+    //setMenuBar(menu);
+    main_layout->setMenuBar(menu);
 
     file_menu = menu->addMenu("File");
     a_open = file_menu->addAction("Open");
@@ -668,6 +702,7 @@ void CalibrateWindow::CreateMenu()
 
     option_menu = menu->addMenu("Option");
     a_equal = option_menu->addAction("Erode = Dilute");
+    a_width = option_menu->addAction("Set image width");
 
     a_edge->setCheckable(true);
     a_loop->setCheckable(true);
@@ -750,12 +785,13 @@ void CalibrateWindow::CreateLayout(QWidget *parent)
     main_layout->addLayout(button_layout);
     //Side object
     //file_name = "/home/bijan/Downloads/IMG_20140630_213804.jpg";
-    file_name = "/home/bijan/Pictures/IMG_20140519_090048.jpg";
+    filter_param.filename = "/home/bijan/Pictures/IMG_20140519_090048.jpg";
     //default
     treshold_1 = 0;
     treshold_2 = 0;
     treshold_3 = 0;
     treshold_4 = 0;
+    surface_width = calib_prev_size;
 
     QFile json_file("settings.json");
     if(json_file.open(QIODevice::ReadOnly | QIODevice::Text))
@@ -793,10 +829,10 @@ void CalibrateWindow::CreateLayout(QWidget *parent)
     }
 
     //Window
-    Main_Widget->setLayout(main_layout);
+    setLayout(main_layout);
     setWindowTitle(trUtf8("Calibration"));
-    setCentralWidget(Main_Widget);
     setAttribute(Qt::WA_DeleteOnClose);
+    setWindowFlags(Qt::Window);
     //setSizePolicy(QSizePolicy::Minimum);
     //setLayoutDirection(Qt::RightToLeft);
 }
@@ -821,6 +857,11 @@ void CalibrateWindow::MyFilledCircle( cv::Mat img, cv::Point center )
  cv::circle( img, center, 10.0, 255, thickness, lineType );
 }
 
+trmParam CalibrateWindow::start()
+{
+    exec();
+    return filter_param;
+}
 
 void CalibrateWindow::find_corner(IplImage* in ,double quality_level ,double min_distance ,int MAX_CORNERS , double k )
 {
@@ -834,7 +875,7 @@ void CalibrateWindow::find_corner(IplImage* in ,double quality_level ,double min
     }
     IplImage out = grayFrame;
     imageView = QImage((const unsigned char*)(out.imageData), out.width,out.height,QImage::Format_Indexed8).rgbSwapped();
-    surface->setPixmap(QPixmap::fromImage(imageView.scaled(calib_prev_size,floor((calib_prev_size/imageView.width())*imageView.height()),Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
+    surface->setPixmap(QPixmap::fromImage(imageView.scaled(surface_width,floor((surface_width/imageView.width())*imageView.height()),Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
 }
 
 void CalibrateWindow::bold_filter(IplImage *in,int kernel_size)

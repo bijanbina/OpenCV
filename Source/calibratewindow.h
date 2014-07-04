@@ -19,15 +19,19 @@ struct trm_param
     int dilute;
     int bold;
     int corner_min;
+    int frame_num;
+    QString filename;
 };
 
 typedef trm_param trmParam;
 
-class CalibrateWindow : public QMainWindow {
+class CalibrateWindow : public QDialog {
     Q_OBJECT
 public:
     explicit CalibrateWindow(QWidget *parent = 0);
     ~CalibrateWindow();
+    trmParam start();
+
 
     void resizeEvent ( QResizeEvent * event )
     {
@@ -56,6 +60,7 @@ private slots:
     void equal_clicked(bool);
     void next_clicked();
     void frame_clicked(bool);
+    void width_clicked();
 
 
 private:
@@ -86,6 +91,7 @@ private:
     QAction		 *a_about;
     QAction		 *a_equal;
     QAction		 *a_frame;
+    QAction		 *a_width;
     IplImage     *image;
     IplImage     *imgout;
     IplImage     *imagesrc; 
@@ -120,6 +126,7 @@ private:
     char         *file_name;
     int           framePosition;
     int           surface_height;
+    double        surface_width;
     trmParam      filter_param;
 };
 

@@ -58,7 +58,7 @@ void MainWindow::analysis_clicked()
 void MainWindow::calibrate_clicked()
 {
     calibrate_window = new CalibrateWindow(this);
-    calibrate_window->show();
+    calibrate_window->exec();
 }
 
 void MainWindow::open_clicked()
