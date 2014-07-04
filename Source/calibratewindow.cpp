@@ -18,7 +18,6 @@ CalibrateWindow::CalibrateWindow(QWidget *parent) :
 
     connect(a_open, SIGNAL(triggered(bool)),this,SLOT(open_clicked()));
     connect(a_open_image, SIGNAL(triggered(bool)),this,SLOT(openimage_clicked()));
-    connect(a_frame, SIGNAL(triggered(bool)),this,SLOT(setframe_clicked()));
     connect(a_save, SIGNAL(triggered(bool)),this,SLOT(save_clicked()));
     connect(a_result, SIGNAL(triggered(bool)),this,SLOT(result_clicked(bool)));
     connect(a_edge, SIGNAL(triggered(bool)),this,SLOT(edgedetect_clicked(bool)));
@@ -68,11 +67,24 @@ void CalibrateWindow::state_change(int changed)
     surface_height = floor((calib_prev_size/image->width)*image->height);
     if (a_frame->isChecked())
     {
+        int frames = (int) cvGetCaptureProperty( capture, CV_CAP_PROP_FRAME_COUNT );
+        if (frames - 100 < 0)
+            return;
+        //cvSetCaptureProperty(capture,CV_CAP_PROP_POS_MSEC,treshold_1);
+        if (treshold_1 + 100 > frames )
+            return;
+        cvSetCaptureProperty(capture,CV_CAP_PROP_POS_FRAMES,treshold_1);
+        std::cout << cvGrabFrame( capture ) << "\t" << frames << std::endl;
+        if (!cvGrabFrame( capture ))
+            return;
+        imagesrc = cvQueryFrame( capture );
+        image = cvCreateImage( cvGetSize(imagesrc), 8, 1 );
+        cvCvtColor( imagesrc, image, CV_BGR2GRAY );
         imageView = QImage((const unsigned char*)(imagesrc->imageData), imagesrc->width,imagesrc->height,QImage::Format_RGB888).rgbSwapped();
         surface->setPixmap(QPixmap::fromImage(imageView.scaled(calib_prev_size,surface_height,Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
         chk1->setText("NULL");
         chk2->setText("NULL");
-        slider1->setMaximum(1000);
+        slider1->setMaximum(frames - 100);
         slider2->setMaximum(2000);
         vslider1->setEnabled(false);
         vslider2->setEnabled(false);
@@ -513,8 +525,11 @@ void CalibrateWindow::open_clicked()
     if (strcmp(file_name,""))
     {
         capture = cvCreateFileCapture( file_name );
+        if (capture == NULL)
+            return;
         imagesrc = cvQueryFrame( capture );
         image = cvCreateImage( cvGetSize(imagesrc), 8, 1 );
+        int diff = surface_height - floor((calib_prev_size/image->width)*image->height);
         cvCvtColor( imagesrc, image, CV_BGR2GRAY );
         a_frame->setEnabled(true);
         a_frame->setChecked(true);
@@ -524,7 +539,6 @@ void CalibrateWindow::open_clicked()
         vslider1->setValue(0);
         chk1->setChecked(false);
         slider1->setValue(0);
-        int diff = surface_height - floor((calib_prev_size/image->width)*image->height);
         state_change(1);
         setMinimumHeight(minimumHeight()-diff);
         resize(minimumSize());
