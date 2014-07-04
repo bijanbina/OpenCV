@@ -27,8 +27,9 @@ MainWindow::~MainWindow()
 void MainWindow::openImage()
 {
     imagerd = cvLoadImage(file_name);
+
     imageView = QImage((const unsigned char*)(imagerd->imageData), imagerd->width,imagerd->height,QImage::Format_RGB888).rgbSwapped();
-    preview->setPixmap(QPixmap::fromImage(imageView));
+    preview->setPixmap(QPixmap::fromImage(imageView.scaled(prev_size,floor((prev_size/imagerd->width)*imagerd->height),Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
 }
 
 void MainWindow::exit_clicked()
@@ -56,7 +57,8 @@ void MainWindow::analysis_clicked()
 
 void MainWindow::calibrate_clicked()
 {
-	calibrate_window->show();
+    calibrate_window = new CalibrateWindow(this);
+    calibrate_window->show();
 }
 
 void MainWindow::open_clicked()
@@ -87,7 +89,6 @@ void MainWindow::CreateMenu()
 
 void MainWindow::CreateLayout()
 {
-    calibrate_window = new CalibrateWindow();
     main_layout = new QVBoxLayout;
     Main_Widget = new QWidget;
 
@@ -215,7 +216,7 @@ void MainWindow::CreateLayout()
     main_layout->addLayout(progress_layout);
     main_layout->addLayout(button_layout);
     //Side object
-    file_name = "/home/bijan/bijam.jpg";
+    file_name = "/home/bijan/videonotavailable.jpg";
     erode_count = 0;
     dilate_count = 0;
 	treshold_1 = 0;
@@ -224,13 +225,7 @@ void MainWindow::CreateLayout()
     Main_Widget->setLayout(main_layout);
     setWindowTitle(trUtf8("Tremor"));
     setCentralWidget(Main_Widget);
-    setGeometry(
-        QStyle::alignedRect(
-            Qt::LeftToRight,
-            Qt::AlignCenter,
-            size(),
-            qApp->desktop()->availableGeometry()
-        ));
+//    move
     //setLayoutDirection(Qt::RightToLeft);
 }
 

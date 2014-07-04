@@ -9,6 +9,8 @@
 #include <trmmosbat.h>
 #include <jsoncpp/json/json.h>
 
+#define calib_prev_size 1000.0
+
 struct trm_param
 {
     double edge_1;
@@ -27,6 +29,11 @@ public:
     explicit CalibrateWindow(QWidget *parent = 0);
     ~CalibrateWindow();
 
+    void resizeEvent ( QResizeEvent * event )
+    {
+        setGeometry((qApp->desktop()->geometry().center() - rect().center()).x(),(qApp->desktop()->geometry().center() - rect().center()).y(),rect().width(),rect().height());
+    }
+
 protected:
     char        *FileOpName; //declare FileOpName as IplImage
 
@@ -38,6 +45,7 @@ private slots:
     void chk1_change();
     void chk2_change();
     void open_clicked();
+    void openimage_clicked();
     void save_clicked();
     void replace_clicked();
     void back_clicked();
@@ -47,9 +55,13 @@ private slots:
     void loop_clicked(bool);
     void equal_clicked(bool);
     void next_clicked();
+    void setframe_clicked();
+    void setframe_ok_clicked(int value);
+    void setframe_changed();
+
 
 private:
-    void CreateLayout();
+    void CreateLayout(QWidget *parent);
     void CreateMenu();
     void openImage();
     void bold_filter(IplImage *in,int kernel_size);
@@ -66,8 +78,9 @@ private:
     QMenu		 *mode_menu;
     QMenu		 *option_menu;
     QMenu		 *help_menu;
-    QAction		 *a_open;
     QAction		 *a_save;
+    QAction		 *a_open;
+    QAction		 *a_open_image;
     QAction		 *a_replace;
     QAction		 *a_edge;
     QAction		 *a_result;
@@ -78,6 +91,7 @@ private:
     IplImage     *image;
     IplImage     *imgout;
     IplImage     *imagesrc; 
+    CvCapture    *capture;
 	QImage        imageView;
     QVBoxLayout  *main_layout;
     QHBoxLayout  *slider1_layout;
@@ -105,7 +119,9 @@ private:
     double        treshold_2;
     double        treshold_3;
     double        treshold_4;
-    char		 *file_name;
+    char         *file_name;
+    int           framePosition;
+    int           surface_height;
     trmParam      filter_param;
 };
 

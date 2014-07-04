@@ -3,7 +3,7 @@
 CalibrateWindow::CalibrateWindow(QWidget *parent) :
     QMainWindow(parent)
 {
-    CreateLayout();
+    CreateLayout(parent);
     CreateMenu();
 
     connect(slider1,SIGNAL(valueChanged(int)), this, SLOT(slider1_change(int)));
@@ -17,6 +17,8 @@ CalibrateWindow::CalibrateWindow(QWidget *parent) :
     connect(replace_btn, SIGNAL(released()), this, SLOT(replace_clicked()));
 
     connect(a_open, SIGNAL(triggered(bool)),this,SLOT(open_clicked()));
+    connect(a_open_image, SIGNAL(triggered(bool)),this,SLOT(openimage_clicked()));
+    connect(a_frame, SIGNAL(triggered(bool)),this,SLOT(setframe_clicked()));
     connect(a_save, SIGNAL(triggered(bool)),this,SLOT(save_clicked()));
     connect(a_result, SIGNAL(triggered(bool)),this,SLOT(result_clicked(bool)));
     connect(a_edge, SIGNAL(triggered(bool)),this,SLOT(edgedetect_clicked(bool)));
@@ -24,16 +26,6 @@ CalibrateWindow::CalibrateWindow(QWidget *parent) :
     connect(a_equal, SIGNAL(triggered(bool)),this,SLOT(equal_clicked(bool)));
     connect(a_replace, SIGNAL(triggered(bool)),this,SLOT(replace_clicked()));
 
-    openImage();
-}
-
-CalibrateWindow::~CalibrateWindow()
-{
-}
-
-//Open image function call
-void CalibrateWindow::openImage()
-{
     imagesrc = cvLoadImage(file_name);
     image = cvLoadImage(file_name,CV_LOAD_IMAGE_GRAYSCALE);
 
@@ -41,8 +33,14 @@ void CalibrateWindow::openImage()
     slider2->setValue(filter_param.edge_2);
     vslider1->setValue(filter_param.erode);
     vslider2->setValue(filter_param.dilute);
-	state_change();
+    state_change();
 }
+
+CalibrateWindow::~CalibrateWindow()
+{
+
+}
+
 
 void CalibrateWindow::state_change(int changed)
 {
@@ -50,6 +48,8 @@ void CalibrateWindow::state_change(int changed)
 	{
         cvReleaseImage(&imgout);
 	}
+    if (image == NULL)
+        return;
     if (changed)
 	{
 		chk1->setChecked(false);
@@ -63,59 +63,58 @@ void CalibrateWindow::state_change(int changed)
         slider2->setValue(0);
         vslider1->setValue(0);
         vslider2->setValue(0);
-	}
+    }
+    surface_height = floor((calib_prev_size/image->width)*image->height);
     if (a_edge->isChecked())
-	{
-    	if (image != NULL)
-    	{
+    {
+        if ( chk2->isChecked() )
+        {
+            if (a_equal->isChecked())
+            {
+                treshold_4 = treshold_3;
+                vslider2->setEnabled(false);
+            }
+            else
+            {
+                vslider2->setEnabled(true);
+                treshold_4 = vslider2->value();
+            }
+            imgout = cvCreateImage(cvGetSize(image),image->depth,image->nChannels);
+            cvErode( image, imgout , NULL , treshold_3 );
+            cvDilate( imgout, imgout , NULL , treshold_4 );
+            imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
+            surface->setPixmap(QPixmap::fromImage(imageView.scaled(calib_prev_size,floor((calib_prev_size/imageView.width())*imageView.height()),Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
+        }
+        if (treshold_1 == 0 && treshold_2 == 0 )
+        {
             if ( chk2->isChecked() )
             {
-                if (a_equal->isChecked())
-                {
-                    treshold_4 = treshold_3;
-                    vslider2->setEnabled(false);
-                }
-                else
-                {
-                    vslider2->setEnabled(true);
-                    treshold_4 = vslider2->value();
-                }
-                imgout = cvCreateImage(cvGetSize(image),image->depth,image->nChannels);
-                cvErode( image, imgout , NULL , treshold_3 );
-                cvDilate( imgout, imgout , NULL , treshold_4 );
                 imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
-                surface->setPixmap(QPixmap::fromImage(imageView));
             }
-        	if (treshold_1 == 0 && treshold_2 == 0 )
-        	{
-                if ( chk2->isChecked() )
-                {
-                    imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
-				}
-				else
-				{
-                    imageView = QImage((const unsigned char*)(imagesrc->imageData), imagesrc->width,imagesrc->height,QImage::Format_RGB888).rgbSwapped();
-                }
-        	}
-        	else
-        	{
-                if ( chk2->isChecked() )
-                {
-                    IplImage* buffer = imgout;
-                    imgout = doCanny( imgout, treshold_1 ,treshold_2, 3 );
-                    imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
-                    cvReleaseImage( &buffer );
-				}
-				else
-                {
-                    imgout = doCanny( image, treshold_1 ,treshold_2, 3 );
-                    imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
-				}
+            else
+            {
+                imageView = QImage((const unsigned char*)(imagesrc->imageData), imagesrc->width,imagesrc->height,QImage::Format_RGB888).rgbSwapped();
             }
-            surface->setPixmap(QPixmap::fromImage(imageView));
-            chk1->setText("Proportion 3");
-            chk2->setText("Dilute+Erode");
-    	}
+        }
+        else
+        {
+            if ( chk2->isChecked() )
+            {
+                IplImage* buffer = imgout;
+                imgout = doCanny( imgout, treshold_1 ,treshold_2, 3 );
+                imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
+                cvReleaseImage( &buffer );
+            }
+            else
+            {
+                imgout = doCanny( image, treshold_1 ,treshold_2, 3 );
+                imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
+            }
+        }
+        surface->setPixmap(QPixmap::fromImage(imageView.scaled(calib_prev_size,floor((calib_prev_size/imageView.width())*imageView.height()),Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
+        surface->setFixedSize(calib_prev_size,floor((calib_prev_size/imageView.width())*imageView.height()));
+        chk1->setText("Proportion 3");
+        chk2->setText("Dilute+Erode");
 		slider1->setMaximum(1000);
         slider2->setMaximum(1000);
         vslider1->setMaximum(30);
@@ -124,44 +123,42 @@ void CalibrateWindow::state_change(int changed)
     }
     else if (a_loop->isChecked())
     {
-        if (image != NULL)
+        imgout = cvCloneImage(image);
+        if (chk1->isChecked())
         {
-            imgout = cvCloneImage(image);
-            if (chk1->isChecked())
-            {
-                bold_filter(imgout,treshold_1);
-            }
-            IplImage *imgclone = cvCloneImage(imgout);
-            CvSeq* firstContour = NULL;
-            CvMemStorage* cnt_storage = cvCreateMemStorage();
-            cvFindContours(imgclone,cnt_storage,&firstContour,sizeof(CvContour),CV_RETR_TREE,CV_CHAIN_APPROX_SIMPLE);
-            CvMemStorage* poly_storage = cvCreateMemStorage();
-            if (chk2->isChecked())
-            {
-                cvZero( imgout );
-            }
-            CvSeq *dummy_seq = firstContour;
-            CvSeq *poly = NULL;
-
-            int i = 0;
-            while( dummy_seq != NULL )
-            {
-                poly = cvApproxPoly(dummy_seq,sizeof(CvContour),poly_storage, CV_POLY_APPROX_DP,treshold_3);
-                if (poly->total == 12)
-                {
-                    for(i = 0; i < poly->total; i++)
-                    {
-                        CvPoint *temp_point = (CvPoint*)cvGetSeqElem(poly,i);
-                        cv::Mat mat_temp = imgout;
-                        cv::circle( mat_temp, *temp_point, 10.0, 255, 3, 1 );
-                    }
-                }
-                dummy_seq = dummy_seq->h_next;
-            }
-
-            imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
-            surface->setPixmap(QPixmap::fromImage(imageView));
+            bold_filter(imgout,treshold_1);
         }
+        IplImage *imgclone = cvCloneImage(imgout);
+        CvSeq* firstContour = NULL;
+        CvMemStorage* cnt_storage = cvCreateMemStorage();
+        cvFindContours(imgclone,cnt_storage,&firstContour,sizeof(CvContour),CV_RETR_TREE,CV_CHAIN_APPROX_SIMPLE);
+        CvMemStorage* poly_storage = cvCreateMemStorage();
+        if (chk2->isChecked())
+        {
+            cvZero( imgout );
+        }
+        CvSeq *dummy_seq = firstContour;
+        CvSeq *poly = NULL;
+
+        int i = 0;
+        while( dummy_seq != NULL )
+        {
+            poly = cvApproxPoly(dummy_seq,sizeof(CvContour),poly_storage, CV_POLY_APPROX_DP,treshold_3);
+            if (poly->total == 12)
+            {
+                for(i = 0; i < poly->total; i++)
+                {
+                    CvPoint *temp_point = (CvPoint*)cvGetSeqElem(poly,i);
+                    cv::Mat mat_temp = imgout;
+                    cv::circle( mat_temp, *temp_point, 10.0, 255, 3, 1 );
+                }
+            }
+            dummy_seq = dummy_seq->h_next;
+        }
+
+        imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
+        surface->setPixmap(QPixmap::fromImage(imageView.scaled(calib_prev_size,floor((calib_prev_size/imageView.width())*imageView.height()),Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
+        surface->setFixedSize(calib_prev_size,floor((calib_prev_size/imageView.width())*imageView.height()));
         chk1->setText("Bold Filter");
         chk2->setText("Zero Input");
         slider1->setMaximum(20);
@@ -175,60 +172,57 @@ void CalibrateWindow::state_change(int changed)
     }
     else if (a_result->isChecked())
     {
-        if (image != NULL)
+        if (filter_param.edge_1 == filter_param.edge_2 && filter_param.edge_2 == 0 )
         {
-            if (filter_param.edge_1 == filter_param.edge_2 && filter_param.edge_2 == 0 )
+            imageView = QImage((const unsigned char*)(imagesrc->imageData), imagesrc->width,imagesrc->height,QImage::Format_Indexed8).rgbSwapped();
+            surface->setPixmap(QPixmap::fromImage(imageView.scaled(calib_prev_size,floor((calib_prev_size/imageView.width())*imageView.height()),Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
+        }
+        else
+        {
+            IplImage *imgclone = cvCreateImage( cvGetSize(imagesrc), 8, 1 );
+            cvCvtColor( imagesrc, imgclone, CV_BGR2GRAY );
+            if (filter_param.erode)
+                cvErode( imgclone, imgclone , NULL , filter_param.erode );
+            if (filter_param.dilute)
+                cvDilate( imgclone, imgclone , NULL , filter_param.dilute );
+            IplImage *buffer = imgclone;
+            imgclone = doCanny( imgclone, filter_param.edge_1 ,filter_param.edge_2, 3 );
+            cvReleaseImage( &buffer );
+            if (filter_param.bold)
+                bold_filter(imgclone,filter_param.bold);
+            CvSeq* firstContour = NULL;
+            CvMemStorage* cnt_storage = cvCreateMemStorage();
+            cvFindContours(imgclone,cnt_storage,&firstContour,sizeof(CvContour),CV_RETR_TREE,CV_CHAIN_APPROX_SIMPLE);
+            CvMemStorage* poly_storage = cvCreateMemStorage();
+            CvSeq *dummy_seq = firstContour;
+            CvSeq *poly = NULL;
+            trmMosbat *first_plus = new trmMosbat;
+            trmMosbat *current_plus = first_plus;
+            int i = 0;
+            imgout = cvCloneImage(imagesrc);
+            cv::RNG rng(1234);
+            while( dummy_seq != NULL )
             {
-                imageView = QImage((const unsigned char*)(imagesrc->imageData), imagesrc->width,imagesrc->height,QImage::Format_Indexed8).rgbSwapped();
-                surface->setPixmap(QPixmap::fromImage(imageView));
-            }
-            else
-            {
-                IplImage *imgclone = cvCreateImage( cvGetSize(imagesrc), 8, 1 );
-                cvCvtColor( imagesrc, imgclone, CV_BGR2GRAY );
-                if (filter_param.erode)
-                    cvErode( imgclone, imgclone , NULL , filter_param.erode );
-                if (filter_param.dilute)
-                    cvDilate( imgclone, imgclone , NULL , filter_param.dilute );
-                IplImage *buffer = imgclone;
-                imgclone = doCanny( imgclone, filter_param.edge_1 ,filter_param.edge_2, 3 );
-                cvReleaseImage( &buffer );
-                if (filter_param.bold)
-                    bold_filter(imgclone,filter_param.bold);
-                CvSeq* firstContour = NULL;
-                CvMemStorage* cnt_storage = cvCreateMemStorage();
-                cvFindContours(imgclone,cnt_storage,&firstContour,sizeof(CvContour),CV_RETR_TREE,CV_CHAIN_APPROX_SIMPLE);
-                CvMemStorage* poly_storage = cvCreateMemStorage();
-                CvSeq *dummy_seq = firstContour;
-                CvSeq *poly = NULL;
-                trmMosbat *first_plus = new trmMosbat;
-                trmMosbat *current_plus = first_plus;
-                int i = 0;
-                imgout = cvCloneImage(imagesrc);
-                cv::RNG rng(1234);
-                while( dummy_seq != NULL )
+                poly = cvApproxPoly(dummy_seq,sizeof(CvContour),poly_storage, CV_POLY_APPROX_DP,filter_param.corner_min);
+                CvScalar color = cvScalar(rng.uniform(0,255), rng.uniform(0, 255), rng.uniform(0, 255));
+                if (poly->total == 12)
                 {
-                    poly = cvApproxPoly(dummy_seq,sizeof(CvContour),poly_storage, CV_POLY_APPROX_DP,filter_param.corner_min);
-                    CvScalar color = cvScalar(rng.uniform(0,255), rng.uniform(0, 255), rng.uniform(0, 255));
-                    if (poly->total == 12)
-                    {
-                        i++;
-                        current_plus->next = new trmMosbat(poly,0);
-                        current_plus = current_plus->next;
-                        cv::Mat mat_temp = imgout;
-                        cv::line(mat_temp,(current_plus->getRect())[0],(current_plus->getRect())[1],color,2,16);
-                        cv::line(mat_temp,(current_plus->getRect())[1],(current_plus->getRect())[2],color,2,16);
-                        cv::line(mat_temp,(current_plus->getRect())[2],(current_plus->getRect())[3],color,2,16);
-                        cv::line(mat_temp,(current_plus->getRect())[3],(current_plus->getRect())[0],color,2,16);
-                        //cv::line(mat_temp,current_plus->center2,current_plus->center3,cvScalar(25,25,200),3);
-                        cv::circle( mat_temp, current_plus->middle, 5.0, 0, 2, 1 );
-                        //drawMark( mat_temp, current_plus->middle, cvScalar(0) );
-                    }
-                    dummy_seq = dummy_seq->h_next;
+                    i++;
+                    current_plus->next = new trmMosbat(poly,0);
+                    current_plus = current_plus->next;
+                    cv::Mat mat_temp = imgout;
+                    cv::line(mat_temp,(current_plus->getRect())[0],(current_plus->getRect())[1],color,2,16);
+                    cv::line(mat_temp,(current_plus->getRect())[1],(current_plus->getRect())[2],color,2,16);
+                    cv::line(mat_temp,(current_plus->getRect())[2],(current_plus->getRect())[3],color,2,16);
+                    cv::line(mat_temp,(current_plus->getRect())[3],(current_plus->getRect())[0],color,2,16);
+                    //cv::line(mat_temp,current_plus->center2,current_plus->center3,cvScalar(25,25,200),3);
+                    cv::circle( mat_temp, current_plus->middle, 5.0, 0, 2, 1 );
+                    //drawMark( mat_temp, current_plus->middle, cvScalar(0) );
                 }
-                imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_RGB888).rgbSwapped();
-                surface->setPixmap(QPixmap::fromImage(imageView));
+                dummy_seq = dummy_seq->h_next;
             }
+            imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_RGB888).rgbSwapped();
+            surface->setPixmap(QPixmap::fromImage(imageView.scaled(calib_prev_size,floor((calib_prev_size/imageView.width())*imageView.height()),Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
         }
         chk1->setText("NULL");
         chk2->setText("NULL");
@@ -361,7 +355,7 @@ void CalibrateWindow::save_clicked()
     file_name = QFileDialog::getSaveFileName(this, "Save File", "","").toLocal8Bit().data();
     if (strcmp(file_name,"") && !imageView.isNull())
     {
-		QPixmap::fromImage(imageView).save(file_name,"PNG",100);
+        QPixmap::fromImage(imageView.scaled(calib_prev_size,floor((calib_prev_size/imageView.width())*imageView.height()),Qt::IgnoreAspectRatio,Qt::SmoothTransformation)).save(file_name,"PNG",100);
 	}
 }
 
@@ -380,6 +374,11 @@ void CalibrateWindow::back_clicked()
         a_edge->setChecked(true);
         a_result->setChecked(false);
         state_change(1);
+        chk2->setChecked(true);
+        slider1->setValue(filter_param.edge_1);
+        slider2->setValue(filter_param.edge_2);
+        vslider1->setValue(filter_param.erode);
+        vslider2->setValue(filter_param.dilute);
     }
     else if (a_result->isChecked())
     {
@@ -401,6 +400,9 @@ void CalibrateWindow::back_clicked()
         a_edge->setChecked(false);
         a_result->setChecked(false);
         state_change(1);
+        slider1->setValue(filter_param.bold);
+        vslider1->setValue(filter_param.corner_min);
+        chk1->setChecked(true);
         next_btn->setText("Next");
     }
 }
@@ -484,11 +486,84 @@ void CalibrateWindow::replace_clicked()
 
 void CalibrateWindow::open_clicked()
 {
+    file_name = QFileDialog::getOpenFileName(this, "Open File", "","Videos (*.mp4 *.avi)").toLocal8Bit().data();
+    if (strcmp(file_name,""))
+    {
+        capture = cvCreateFileCapture( file_name );
+        imagesrc = cvQueryFrame( capture );
+        image = cvCreateImage( cvGetSize(imagesrc), 8, 1 );
+        cvCvtColor( imagesrc, image, CV_BGR2GRAY );
+        slider1->setValue(filter_param.edge_1);
+        slider2->setValue(filter_param.edge_2);
+        vslider1->setValue(filter_param.erode);
+        vslider2->setValue(filter_param.dilute);
+        a_frame->setEnabled(true);
+        int diff = surface_height - floor((calib_prev_size/image->width)*image->height);
+        state_change();
+        setMinimumHeight(minimumHeight()-diff);
+        resize(minimumSize());
+    }
+
+}
+
+void CalibrateWindow::openimage_clicked()
+{
     file_name = QFileDialog::getOpenFileName(this, "Open File", "","Images (*.png *.jpg)").toLocal8Bit().data();
     if (strcmp(file_name,""))
     {
-        openImage();
+        imagesrc = cvLoadImage(file_name);
+        image = cvLoadImage(file_name,CV_LOAD_IMAGE_GRAYSCALE);
+
+        slider1->setValue(filter_param.edge_1);
+        slider2->setValue(filter_param.edge_2);
+        vslider1->setValue(filter_param.erode);
+        vslider2->setValue(filter_param.dilute);
+        a_frame->setEnabled(false);
+        int diff = surface_height - floor((calib_prev_size/image->width)*image->height);
+        state_change();
+        setMinimumHeight(minimumHeight()-diff);
+        resize(minimumSize());
 	}
+}
+
+void CalibrateWindow::setframe_clicked()
+{
+    QDialog *frame_window = new QDialog();
+    frame_window->setWindowTitle("Set Frame");
+    QVBoxLayout *frame_layout = new QVBoxLayout;
+    QHBoxLayout *frame_slider_layout = new QHBoxLayout;
+    QHBoxLayout *frame_button_layout = new QHBoxLayout;
+    QLabel *frame_slider_label = new QLabel("Position = 0");
+    QSlider *frame_slider = new QSlider(Qt::Horizontal);
+    QPushButton *frame_button_ok = new QPushButton ("Ok");
+    QPushButton *frame_button_cancel = new QPushButton ("Cancel");
+    frame_slider_layout->addWidget(frame_slider_label);
+    frame_slider_layout->addWidget(frame_slider);
+    frame_layout->addLayout(frame_slider_layout);
+    frame_button_layout->addWidget(frame_button_cancel);
+    frame_button_layout->addWidget(frame_button_ok);
+    frame_layout->addLayout(frame_button_layout);
+    connect(frame_button_ok, SIGNAL(released()), this, SLOT(setframe_ok_clicked()));
+    connect(frame_button_cancel, SIGNAL(released()), frame_window, SLOT(close()));
+    connect(frame_slider,SIGNAL(valueChanged(int)), this, SLOT(setframe_changed(int)));
+    int frames = (int) cvGetCaptureProperty(capture, CV_CAP_PROP_FRAME_COUNT);
+    if( frames!= 0 )
+    {
+        frame_slider->setMaximum(frames);
+    }
+    frame_window->setLayout(frame_layout);
+    frame_window->setMinimumWidth(300);
+    frame_window->show();
+}
+
+void CalibrateWindow::setframe_changed()
+{
+    ;
+}
+
+void CalibrateWindow::setframe_ok_clicked(int value)
+{
+    ;
 }
 
 void CalibrateWindow::result_clicked(bool state)
@@ -553,6 +628,7 @@ void CalibrateWindow::CreateMenu()
 
     file_menu = menu->addMenu("File");
     a_open = file_menu->addAction("Open");
+    a_open_image = file_menu->addAction("Open Image");
     a_save = file_menu->addAction("Save");
     a_replace = file_menu->addAction("Replace");
 
@@ -563,6 +639,7 @@ void CalibrateWindow::CreateMenu()
 
     option_menu = menu->addMenu("Option");
     a_equal = option_menu->addAction("Erode = Dilute");
+    a_frame = option_menu->addAction("Set Frame");
 
     a_edge->setCheckable(true);
     a_loop->setCheckable(true);
@@ -572,11 +649,13 @@ void CalibrateWindow::CreateMenu()
     a_edge->setChecked(true);
     a_equal->setChecked(true);
 
+    a_frame->setEnabled(false);
+
     help_menu = menu->addMenu("Help");
     a_about = help_menu->addAction("About");
 }
 
-void CalibrateWindow::CreateLayout()
+void CalibrateWindow::CreateLayout(QWidget *parent)
 {
 	//Default
     imgout = NULL;
@@ -679,10 +758,17 @@ void CalibrateWindow::CreateLayout()
         filter_param.corner_min = 0;
     }
 
+    if ( filter_param.erode == filter_param.dilute && filter_param.dilute == 0 )
+    {
+        chk2->setChecked(false);
+    }
+
     //Window
     Main_Widget->setLayout(main_layout);
     setWindowTitle(trUtf8("Calibration"));
     setCentralWidget(Main_Widget);
+    setAttribute(Qt::WA_DeleteOnClose);
+    //setSizePolicy(QSizePolicy::Minimum);
     //setLayoutDirection(Qt::RightToLeft);
 }
 
@@ -719,7 +805,7 @@ void CalibrateWindow::find_corner(IplImage* in ,double quality_level ,double min
     }
     IplImage out = grayFrame;
     imageView = QImage((const unsigned char*)(out.imageData), out.width,out.height,QImage::Format_Indexed8).rgbSwapped();
-    surface->setPixmap(QPixmap::fromImage(imageView));
+    surface->setPixmap(QPixmap::fromImage(imageView.scaled(calib_prev_size,floor((calib_prev_size/imageView.width())*imageView.height()),Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
 }
 
 void CalibrateWindow::bold_filter(IplImage *in,int kernel_size)

@@ -20,12 +20,20 @@
 #include <qwt_scale_widget.h>
 #include <qwt_plot_spectrogram.h>
 #include <qwt_text_label.h>
+#include <iostream>
+
+#define prev_size 300.0
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
+
+    void resizeEvent ( QResizeEvent * event )
+    {
+        setGeometry((qApp->desktop()->geometry().center() - rect().center()).x(),(qApp->desktop()->geometry().center() - rect().center()).y(),rect().width(),rect().height());
+    }
 
 protected:
     char        *FileOpName; //declare FileOpName as IplImage
@@ -103,6 +111,7 @@ private:
     double        	erode_count;
     double        	dilate_count;
     char		 	*file_name;
+    trmParam         filter_param;
 };
 
 
