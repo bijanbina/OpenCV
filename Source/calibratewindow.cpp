@@ -499,26 +499,7 @@ void CalibrateWindow::next_clicked()
         /*Creating a json object*/
         // ---- create from scratch ----
 
-        Json::Value json_main;
-        Json::Value edge;
-        edge["Treshold 1"] = filter_param.edge_1;
-        edge["Treshold 2"] = filter_param.edge_2;
-        json_main["Erode"] = filter_param.erode;
-        json_main["Dilate"] = filter_param.dilute;
-        json_main["Bold"] = filter_param.bold;
-        json_main["Corner Minimum Distance"] = filter_param.corner_min;
-        json_main["Edge Detection"] = edge;
-
-        // write in a nice readible way
-        Json::StyledWriter styledWriter;
-        std::string str = styledWriter.write(json_main);
-        std::vector<char> data(str.begin(), str.end());
-        data.push_back('\0');
-        QFile file;
-        file.setFileName("settings.json");
-        file.open(QIODevice::WriteOnly | QIODevice::Text);
-        file.write(data.data());
-        file.close();
+        trmMosbat::Saveparam(filter_param,"settings.json");
 
         close();
      }
@@ -793,35 +774,7 @@ void CalibrateWindow::CreateLayout(QWidget *parent)
     treshold_4 = 0;
     surface_width = calib_prev_size;
 
-    QFile json_file("settings.json");
-    if(json_file.open(QIODevice::ReadOnly | QIODevice::Text))
-    {
-        Json::Value json_obj;
-        Json::Reader reader;
-        if (reader.parse(QString(json_file.readAll()).toUtf8().data(), json_obj))
-        {
-            filter_param.bold = json_obj.get("Bold",0).asInt();
-            filter_param.erode = json_obj.get("Erode",0).asInt();
-            filter_param.dilute = json_obj.get("Dilate",0).asInt();
-            const Json::Value edge = json_obj["Edge Detection"];
-            if (!edge.empty())
-            {
-                filter_param.edge_1 = edge.get("Treshold 1",0).asDouble();
-                filter_param.edge_2 = edge.get("Treshold 2",0).asDouble();
-            }
-            filter_param.corner_min = json_obj.get("Corner Minimum Distance",0).asInt();
-        }
-
-    }
-    else
-    {
-        filter_param.bold = 0;
-        filter_param.erode = 0;
-        filter_param.dilute = 0;
-        filter_param.edge_1 = 0;
-        filter_param.edge_2 = 0;
-        filter_param.corner_min = 0;
-    }
+    filter_param = trmMosbat::Loadparam("settings.json");
 
     if ( filter_param.erode == filter_param.dilute && filter_param.dilute == 0 )
     {
@@ -836,6 +789,7 @@ void CalibrateWindow::CreateLayout(QWidget *parent)
     //setSizePolicy(QSizePolicy::Minimum);
     //setLayoutDirection(Qt::RightToLeft);
 }
+
 
 IplImage* CalibrateWindow::doCanny( IplImage* in, double lowThresh, double highThresh, double aperture )
 {

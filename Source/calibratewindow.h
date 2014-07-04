@@ -3,27 +3,12 @@
 
 #include <QMainWindow>
 #include <opencv/highgui.h>
-#include <unistd.h>
 #include <QtWidgets>
 #include <cv.h>
 #include <trmmosbat.h>
-#include <jsoncpp/json/json.h>
 
 #define calib_prev_size 1000.0
 
-struct trm_param
-{
-    double edge_1;
-    double edge_2;
-    int erode;
-    int dilute;
-    int bold;
-    int corner_min;
-    int frame_num;
-    QString filename;
-};
-
-typedef trm_param trmParam;
 
 class CalibrateWindow : public QDialog {
     Q_OBJECT

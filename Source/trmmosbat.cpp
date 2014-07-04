@@ -294,3 +294,65 @@ double trmMosbat::findDerivative(CvPoint pt1, CvPoint pt2, CvPoint pt3, CvPoint 
 
     return slope;
 }
+
+trmParam trmMosbat::Loadparam(char *filename)
+{
+    trmParam return_data;
+    QFile json_file(filename);
+    if(json_file.open(QIODevice::ReadOnly | QIODevice::Text))
+    {
+        Json::Value json_obj;
+        Json::Reader reader;
+        if (reader.parse(QString(json_file.readAll()).toUtf8().data(), json_obj))
+        {
+            return_data.bold = json_obj.get("Bold",0).asInt();
+            return_data.erode = json_obj.get("Erode",0).asInt();
+            return_data.dilute = json_obj.get("Dilate",0).asInt();
+            return_data.frame_num = json_obj.get("Start Frame Number",0).asInt();
+            return_data.filename = json_obj.get("File Address",0).asCString();
+            const Json::Value edge = json_obj["Edge Detection"];
+            if (!edge.empty())
+            {
+                return_data.edge_1 = edge.get("Treshold 1",0).asDouble();
+                return_data.edge_2 = edge.get("Treshold 2",0).asDouble();
+            }
+            return_data.corner_min = json_obj.get("Corner Minimum Distance",0).asInt();
+        }
+
+    }
+    else
+    {
+        return_data.bold = 0;
+        return_data.erode = 0;
+        return_data.dilute = 0;
+        return_data.edge_1 = 0;
+        return_data.edge_2 = 0;
+        return_data.corner_min = 0;
+    }
+}
+
+trmParam trmMosbat::Saveparam(trmParam data,char *filename)
+{
+    Json::Value json_main;
+    Json::Value edge;
+    edge["Treshold 1"] = data.edge_1;
+    edge["Treshold 2"] = data.edge_2;
+    json_main["Erode"] = data.erode;
+    json_main["Dilate"] = data.dilute;
+    json_main["Bold"] = data.bold;
+    json_main["Corner Minimum Distance"] = data.corner_min;
+    json_main["File Address"] = data.filename.toUtf8().data();
+    json_main["Start Frame Number"] = data.frame_num;
+    json_main["Edge Detection"] = edge;
+
+    // write in a nice readible way
+    Json::StyledWriter styledWriter;
+    std::string str = styledWriter.write(json_main);
+    std::vector<char> json_data(str.begin(), str.end());
+    json_data.push_back('\0');
+    QFile file;
+    file.setFileName(filename);
+    file.open(QIODevice::WriteOnly | QIODevice::Text);
+    file.write(json_data.data());
+    file.close();
+}

@@ -58,7 +58,7 @@ void MainWindow::analysis_clicked()
 void MainWindow::calibrate_clicked()
 {
     calibrate_window = new CalibrateWindow(this);
-    calibrate_window->exec();
+    filter_param = calibrate_window->start();
 }
 
 void MainWindow::open_clicked()
@@ -217,6 +217,7 @@ void MainWindow::CreateLayout()
     main_layout->addLayout(button_layout);
     //Side object
     file_name = "/home/bijan/videonotavailable.jpg";
+    filter_param = trmMosbat::Loadparam("settings.json");
     erode_count = 0;
     dilate_count = 0;
 	treshold_1 = 0;
