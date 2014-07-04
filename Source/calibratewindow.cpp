@@ -24,6 +24,7 @@ CalibrateWindow::CalibrateWindow(QWidget *parent) :
     connect(a_edge, SIGNAL(triggered(bool)),this,SLOT(edgedetect_clicked(bool)));
     connect(a_loop, SIGNAL(triggered(bool)),this,SLOT(loop_clicked(bool)));
     connect(a_equal, SIGNAL(triggered(bool)),this,SLOT(equal_clicked(bool)));
+    connect(a_frame, SIGNAL(triggered(bool)),this,SLOT(frame_clicked(bool)));
     connect(a_replace, SIGNAL(triggered(bool)),this,SLOT(replace_clicked()));
 
     imagesrc = cvLoadImage(file_name);
@@ -65,6 +66,17 @@ void CalibrateWindow::state_change(int changed)
         vslider2->setValue(0);
     }
     surface_height = floor((calib_prev_size/image->width)*image->height);
+    if (a_frame->isChecked())
+    {
+        imageView = QImage((const unsigned char*)(imagesrc->imageData), imagesrc->width,imagesrc->height,QImage::Format_RGB888).rgbSwapped();
+        surface->setPixmap(QPixmap::fromImage(imageView.scaled(calib_prev_size,surface_height,Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
+        chk1->setText("NULL");
+        chk2->setText("NULL");
+        slider1->setMaximum(1000);
+        slider2->setMaximum(2000);
+        vslider1->setEnabled(false);
+        vslider2->setEnabled(false);
+    }
     if (a_edge->isChecked())
     {
         if ( chk2->isChecked() )
@@ -83,7 +95,7 @@ void CalibrateWindow::state_change(int changed)
             cvErode( image, imgout , NULL , treshold_3 );
             cvDilate( imgout, imgout , NULL , treshold_4 );
             imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
-            surface->setPixmap(QPixmap::fromImage(imageView.scaled(calib_prev_size,floor((calib_prev_size/imageView.width())*imageView.height()),Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
+            surface->setPixmap(QPixmap::fromImage(imageView.scaled(calib_prev_size,surface_height,Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
         }
         if (treshold_1 == 0 && treshold_2 == 0 )
         {
@@ -111,8 +123,7 @@ void CalibrateWindow::state_change(int changed)
                 imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
             }
         }
-        surface->setPixmap(QPixmap::fromImage(imageView.scaled(calib_prev_size,floor((calib_prev_size/imageView.width())*imageView.height()),Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
-        surface->setFixedSize(calib_prev_size,floor((calib_prev_size/imageView.width())*imageView.height()));
+        surface->setPixmap(QPixmap::fromImage(imageView.scaled(calib_prev_size,surface_height,Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
         chk1->setText("Proportion 3");
         chk2->setText("Dilute+Erode");
 		slider1->setMaximum(1000);
@@ -157,8 +168,7 @@ void CalibrateWindow::state_change(int changed)
         }
 
         imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
-        surface->setPixmap(QPixmap::fromImage(imageView.scaled(calib_prev_size,floor((calib_prev_size/imageView.width())*imageView.height()),Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
-        surface->setFixedSize(calib_prev_size,floor((calib_prev_size/imageView.width())*imageView.height()));
+        surface->setPixmap(QPixmap::fromImage(imageView.scaled(calib_prev_size,surface_height,Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
         chk1->setText("Bold Filter");
         chk2->setText("Zero Input");
         slider1->setMaximum(20);
@@ -175,7 +185,7 @@ void CalibrateWindow::state_change(int changed)
         if (filter_param.edge_1 == filter_param.edge_2 && filter_param.edge_2 == 0 )
         {
             imageView = QImage((const unsigned char*)(imagesrc->imageData), imagesrc->width,imagesrc->height,QImage::Format_Indexed8).rgbSwapped();
-            surface->setPixmap(QPixmap::fromImage(imageView.scaled(calib_prev_size,floor((calib_prev_size/imageView.width())*imageView.height()),Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
+            surface->setPixmap(QPixmap::fromImage(imageView.scaled(calib_prev_size,surface_height,Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
         }
         else
         {
@@ -222,7 +232,7 @@ void CalibrateWindow::state_change(int changed)
                 dummy_seq = dummy_seq->h_next;
             }
             imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_RGB888).rgbSwapped();
-            surface->setPixmap(QPixmap::fromImage(imageView.scaled(calib_prev_size,floor((calib_prev_size/imageView.width())*imageView.height()),Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
+            surface->setPixmap(QPixmap::fromImage(imageView.scaled(calib_prev_size,surface_height,Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
         }
         chk1->setText("NULL");
         chk2->setText("NULL");
@@ -355,7 +365,7 @@ void CalibrateWindow::save_clicked()
     file_name = QFileDialog::getSaveFileName(this, "Save File", "","").toLocal8Bit().data();
     if (strcmp(file_name,"") && !imageView.isNull())
     {
-        QPixmap::fromImage(imageView.scaled(calib_prev_size,floor((calib_prev_size/imageView.width())*imageView.height()),Qt::IgnoreAspectRatio,Qt::SmoothTransformation)).save(file_name,"PNG",100);
+        QPixmap::fromImage(imageView).save(file_name,"PNG",100);
 	}
 }
 
@@ -415,13 +425,25 @@ void CalibrateWindow::next_clicked()
         image = imgout;
         imgout = NULL;
     }
-    if (a_edge->isChecked())
+    if (a_frame->isChecked())
+    {
+        a_frame->setChecked(false);
+        a_loop->setChecked(false);
+        a_edge->setChecked(true);
+        a_result->setChecked(false);
+        state_change(1);
+        vslider1->setValue(0);
+        chk1->setChecked(false);
+        slider1->setValue(0);
+    }
+    else if (a_edge->isChecked())
     {
         filter_param.edge_1 = treshold_1;
         filter_param.edge_2 = treshold_2;
         filter_param.erode = treshold_3;
         filter_param.dilute = treshold_4;
         a_loop->setChecked(true);
+        a_frame->setChecked(false);
         a_edge->setChecked(false);
         a_result->setChecked(false);
         state_change(1);
@@ -433,6 +455,7 @@ void CalibrateWindow::next_clicked()
     {
         filter_param.bold = treshold_1;
         filter_param.corner_min = treshold_3;
+        a_frame->setChecked(false);
         a_loop->setChecked(false);
         a_edge->setChecked(false);
         a_result->setChecked(true);
@@ -493,13 +516,16 @@ void CalibrateWindow::open_clicked()
         imagesrc = cvQueryFrame( capture );
         image = cvCreateImage( cvGetSize(imagesrc), 8, 1 );
         cvCvtColor( imagesrc, image, CV_BGR2GRAY );
-        slider1->setValue(filter_param.edge_1);
-        slider2->setValue(filter_param.edge_2);
-        vslider1->setValue(filter_param.erode);
-        vslider2->setValue(filter_param.dilute);
         a_frame->setEnabled(true);
+        a_frame->setChecked(true);
+        a_loop->setChecked(false);
+        a_edge->setChecked(false);
+        a_result->setChecked(false);
+        vslider1->setValue(0);
+        chk1->setChecked(false);
+        slider1->setValue(0);
         int diff = surface_height - floor((calib_prev_size/image->width)*image->height);
-        state_change();
+        state_change(1);
         setMinimumHeight(minimumHeight()-diff);
         resize(minimumSize());
     }
@@ -513,57 +539,42 @@ void CalibrateWindow::openimage_clicked()
     {
         imagesrc = cvLoadImage(file_name);
         image = cvLoadImage(file_name,CV_LOAD_IMAGE_GRAYSCALE);
-
+        a_frame->setEnabled(false);
+        a_frame->setChecked(false);
+        a_loop->setChecked(false);
+        a_edge->setChecked(true);
+        a_result->setChecked(false);
+        chk1->setChecked(false);
+        slider1->setValue(0);
+        int diff = surface_height - floor((calib_prev_size/image->width)*image->height);
+        state_change(1);
         slider1->setValue(filter_param.edge_1);
         slider2->setValue(filter_param.edge_2);
         vslider1->setValue(filter_param.erode);
         vslider2->setValue(filter_param.dilute);
-        a_frame->setEnabled(false);
-        int diff = surface_height - floor((calib_prev_size/image->width)*image->height);
-        state_change();
+        chk2->setChecked(true);
+        if ( filter_param.erode == filter_param.dilute && filter_param.dilute == 0 )
+        {
+            chk2->setChecked(false);
+        }
         setMinimumHeight(minimumHeight()-diff);
         resize(minimumSize());
 	}
 }
 
-void CalibrateWindow::setframe_clicked()
+void CalibrateWindow::frame_clicked(bool state)
 {
-    QDialog *frame_window = new QDialog();
-    frame_window->setWindowTitle("Set Frame");
-    QVBoxLayout *frame_layout = new QVBoxLayout;
-    QHBoxLayout *frame_slider_layout = new QHBoxLayout;
-    QHBoxLayout *frame_button_layout = new QHBoxLayout;
-    QLabel *frame_slider_label = new QLabel("Position = 0");
-    QSlider *frame_slider = new QSlider(Qt::Horizontal);
-    QPushButton *frame_button_ok = new QPushButton ("Ok");
-    QPushButton *frame_button_cancel = new QPushButton ("Cancel");
-    frame_slider_layout->addWidget(frame_slider_label);
-    frame_slider_layout->addWidget(frame_slider);
-    frame_layout->addLayout(frame_slider_layout);
-    frame_button_layout->addWidget(frame_button_cancel);
-    frame_button_layout->addWidget(frame_button_ok);
-    frame_layout->addLayout(frame_button_layout);
-    connect(frame_button_ok, SIGNAL(released()), this, SLOT(setframe_ok_clicked()));
-    connect(frame_button_cancel, SIGNAL(released()), frame_window, SLOT(close()));
-    connect(frame_slider,SIGNAL(valueChanged(int)), this, SLOT(setframe_changed(int)));
-    int frames = (int) cvGetCaptureProperty(capture, CV_CAP_PROP_FRAME_COUNT);
-    if( frames!= 0 )
+    if (state)
     {
-        frame_slider->setMaximum(frames);
+        a_edge->setChecked(false);
+        a_loop->setChecked(false);
+        a_result->setChecked(false);
+        state_change(1);
     }
-    frame_window->setLayout(frame_layout);
-    frame_window->setMinimumWidth(300);
-    frame_window->show();
-}
-
-void CalibrateWindow::setframe_changed()
-{
-    ;
-}
-
-void CalibrateWindow::setframe_ok_clicked(int value)
-{
-    ;
+    else
+    {
+        a_frame->setChecked(true);
+    }
 }
 
 void CalibrateWindow::result_clicked(bool state)
@@ -572,6 +583,7 @@ void CalibrateWindow::result_clicked(bool state)
     {
         a_edge->setChecked(false);
         a_loop->setChecked(false);
+        a_frame->setChecked(false);
         state_change(1);
     }
     else
@@ -586,6 +598,7 @@ void CalibrateWindow::edgedetect_clicked(bool state)
     {
         a_result->setChecked(false);
         a_loop->setChecked(false);
+        a_frame->setChecked(false);
         state_change(1);
     }
     else
@@ -612,6 +625,7 @@ void CalibrateWindow::loop_clicked(bool state)
     {
         a_edge->setChecked(false);
         a_result->setChecked(false);
+        a_frame->setChecked(false);
         state_change(1);
         vslider1->setValue(9);
     }
@@ -633,18 +647,19 @@ void CalibrateWindow::CreateMenu()
     a_replace = file_menu->addAction("Replace");
 
     mode_menu = menu->addMenu("Mode");
+    a_frame = mode_menu->addAction("Select Image");
     a_edge = mode_menu->addAction("Edge Detection");
     a_loop = mode_menu->addAction("Loop Detection");
     a_result = mode_menu->addAction("Result");
 
     option_menu = menu->addMenu("Option");
     a_equal = option_menu->addAction("Erode = Dilute");
-    a_frame = option_menu->addAction("Set Frame");
 
     a_edge->setCheckable(true);
     a_loop->setCheckable(true);
     a_result->setCheckable(true);
     a_equal->setCheckable(true);
+    a_frame->setCheckable(true);
 
     a_edge->setChecked(true);
     a_equal->setChecked(true);

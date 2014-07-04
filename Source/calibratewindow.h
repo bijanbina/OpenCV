@@ -55,9 +55,7 @@ private slots:
     void loop_clicked(bool);
     void equal_clicked(bool);
     void next_clicked();
-    void setframe_clicked();
-    void setframe_ok_clicked(int value);
-    void setframe_changed();
+    void frame_clicked(bool);
 
 
 private:
