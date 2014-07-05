@@ -267,7 +267,7 @@ void MainWindow::CreateLayout()
     main_layout->addLayout(progress_layout);
     main_layout->addLayout(button_layout);
     //Side object
-    file_name = "/home/bijan/videonotavailable.jpg";
+    file_name = "../Resources/NA.jpg";
     filter_param = trmMosbat::Loadparam("settings.json");
     erode_count = 0;
     dilate_count = 0;
