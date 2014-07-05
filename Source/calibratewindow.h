@@ -7,7 +7,6 @@
 #include <cv.h>
 #include <trmmosbat.h>
 
-#define calib_prev_size 1000.0
 
 
 class CalibrateWindow : public QDialog {

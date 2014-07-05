@@ -27,14 +27,38 @@ CalibrateWindow::CalibrateWindow(QWidget *parent) :
     connect(a_replace, SIGNAL(triggered(bool)),this,SLOT(replace_clicked()));
     connect(a_width, SIGNAL(triggered(bool)),this,SLOT(width_clicked()));
 
-    imagesrc = cvLoadImage(filter_param.filename.toLocal8Bit().data());
-    image = cvLoadImage(filter_param.filename.toLocal8Bit().data(),CV_LOAD_IMAGE_GRAYSCALE);
+    if (!filter_param.isVideo)
+    {
+        imagesrc = cvLoadImage(filter_param.filename.toLocal8Bit().data());
+        image = cvLoadImage(filter_param.filename.toLocal8Bit().data(),CV_LOAD_IMAGE_GRAYSCALE);
 
-    slider1->setValue(filter_param.edge_1);
-    slider2->setValue(filter_param.edge_2);
-    vslider1->setValue(filter_param.erode);
-    vslider2->setValue(filter_param.dilute);
-    state_change();
+        slider1->setValue(filter_param.edge_1);
+        slider2->setValue(filter_param.edge_2);
+        vslider1->setValue(filter_param.erode);
+        vslider2->setValue(filter_param.dilute);
+        state_change();
+    }
+    else
+    {
+        capture = cvCreateFileCapture( filter_param.filename.toLocal8Bit().data() );
+        if (capture == NULL)
+            return;
+        imagesrc = cvQueryFrame( capture );
+        image = cvCreateImage( cvGetSize(imagesrc), 8, 1 );
+        cvCvtColor( imagesrc, image, CV_BGR2GRAY );
+        chk2->setChecked(false);
+        a_frame->setEnabled(true);
+        a_frame->setChecked(true);
+        a_loop->setChecked(false);
+        a_edge->setChecked(false);
+        a_result->setChecked(false);
+        vslider1->setValue(0);
+        chk1->setChecked(false);
+        slider1->setValue(0);
+        state_change(1);
+        slider1->setValue(filter_param.frame_num);
+        slider2->setValue(filter_param.calibre_width);
+    }
 }
 
 CalibrateWindow::~CalibrateWindow()
@@ -142,6 +166,7 @@ void CalibrateWindow::state_change(int changed)
         chk2->setText("Dilute+Erode");
 		slider1->setMaximum(1000);
         slider2->setMaximum(1000);
+        slider2->setMinimum(0);
         vslider1->setMaximum(30);
         vslider2->setMaximum(30);
         vslider1->setEnabled(true);
@@ -399,6 +424,8 @@ void CalibrateWindow::back_clicked()
             a_result->setChecked(false);
             a_frame->setChecked(true);
             state_change(1);
+            slider1->setValue(filter_param.frame_num);
+            slider2->setValue(filter_param.calibre_width);
         }
         else
         {
@@ -460,14 +487,22 @@ void CalibrateWindow::next_clicked()
     }
     if (a_frame->isChecked())
     {
+        filter_param.frame_num = treshold_1;
+        if (chk2->isChecked())
+        {
+            filter_param.calibre_width = treshold_1;
+        }
         a_frame->setChecked(false);
         a_loop->setChecked(false);
         a_edge->setChecked(true);
         a_result->setChecked(false);
         state_change(1);
-        vslider1->setValue(0);
         chk1->setChecked(false);
-        slider1->setValue(0);
+        chk2->setChecked(true);
+        slider1->setValue(filter_param.edge_1);
+        slider2->setValue(filter_param.edge_2);
+        vslider1->setValue(filter_param.erode);
+        vslider2->setValue(filter_param.dilute);
     }
     else if (a_edge->isChecked())
     {
@@ -523,9 +558,10 @@ void CalibrateWindow::replace_clicked()
 
 void CalibrateWindow::open_clicked()
 {
-    filter_param.filename = QFileDialog::getOpenFileName(this, "Open File", "","Videos (*.mp4 *.avi)");
+    filter_param.filename = QFileDialog::getOpenFileName(this, "Open File", "","Videos (*.mp4 *.avi *.mov)");
     if (!filter_param.filename.isEmpty())
     {
+        filter_param.isVideo = true;
         capture = cvCreateFileCapture( filter_param.filename.toLocal8Bit().data() );
         if (capture == NULL)
             return;
@@ -554,6 +590,7 @@ void CalibrateWindow::openimage_clicked()
     filter_param.filename = QFileDialog::getOpenFileName(this, "Open File", "","Images (*.png *.jpg)");
     if (!filter_param.filename.isEmpty())
     {
+        filter_param.isVideo = false;
         imagesrc = cvLoadImage(filter_param.filename.toLocal8Bit().data());
         image = cvLoadImage(filter_param.filename.toLocal8Bit().data(),CV_LOAD_IMAGE_GRAYSCALE);
         a_frame->setEnabled(false);
@@ -773,7 +810,7 @@ void CalibrateWindow::CreateLayout(QWidget *parent)
     treshold_2 = 0;
     treshold_3 = 0;
     treshold_4 = 0;
-    surface_width = calib_prev_size;
+    surface_width = filter_param.calibre_width;
 
 
     if ( filter_param.erode == filter_param.dilute && filter_param.dilute == 0 )

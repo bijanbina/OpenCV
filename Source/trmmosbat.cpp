@@ -332,7 +332,9 @@ trmParam trmMosbat::Loadparam(char *filename)
             return_data.bold = json_obj.get("Bold",0).asInt();
             return_data.erode = json_obj.get("Erode",0).asInt();
             return_data.dilute = json_obj.get("Dilate",0).asInt();
+            return_data.calibre_width = json_obj.get("Calibre Image Width",calib_prev_size).asInt();
             return_data.frame_num = json_obj.get("Start Frame Number",0).asInt();
+            return_data.isVideo = json_obj.get("Is Video",false).asBool();
             std::string buffer = json_obj.get("File Address","NULL").asString();
             int len = strlen(buffer.c_str());
             char *buffer2 = (char *)malloc(len);
@@ -374,6 +376,8 @@ void trmMosbat::Saveparam(trmParam data,char *filename)
     json_main["File Address"] = data.filename.toUtf8().data();
     json_main["Start Frame Number"] = data.frame_num;
     json_main["Edge Detection"] = edge;
+    json_main["Is Video"] = data.isVideo;
+    json_main["Calibre Image Width"] = data.calibre_width;
 
     // write in a nice readible way
     Json::StyledWriter styledWriter;

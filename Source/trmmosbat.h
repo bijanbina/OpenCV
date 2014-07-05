@@ -10,6 +10,7 @@
 #include <string.h>
 
 #define PI 3.14159265
+#define calib_prev_size 1000.0
 
 struct trm_param
 {
@@ -20,6 +21,8 @@ struct trm_param
     int bold;
     int corner_min;
     int frame_num;
+    bool isVideo;
+    int calibre_width;
     QString filename;
 };
 
