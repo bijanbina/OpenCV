@@ -45,11 +45,13 @@ private slots:
     void analysis_clicked();
     void save_clicked();
     void exit_clicked();
+    void slider1_change(int);
+    void slider2_change(int);
 
 private:
     void CreateLayout();
 	void CreateMenu();
-    void openImage();
+    void loadVideo();
     void updatePrev();
     IplImage* doPyrDown( IplImage* in, int filter);
 
@@ -69,7 +71,6 @@ private:
 	QAction			*a_about;
     QImage       	 imageView;
     QVBoxLayout  	*main_layout;
-    QHBoxLayout  	*slider1_layout;
     QLabel       	*radial_label;
     QLabel       	*freq_label;
     QLabel       	*peiod_label;
@@ -106,7 +107,16 @@ private:
     QwtPlotZoomer   *yt_zoomer;
     QwtPlotZoomer   *vt_zoomer;
     IplImage     	*image;
+    QHBoxLayout     *slider1_layout;
+    QLabel          *slider1_label;
+    QSlider         *slider1;
+    QSlider         *slider2;
+    QHBoxLayout     *slider2_layout;
+    QLabel          *slider2_label;
+    CvCapture       *capture;
     char		 	*file_name;
+    double           treshold_1;
+    double           treshold_2;
     trmParam         filter_param;
 };
 

@@ -749,6 +749,7 @@ void CalibrateWindow::CreateLayout(QWidget *parent)
 	chk1 = new QCheckBox("prop 3");
 	chk2 = new QCheckBox("option 2");
     chk2->setChecked(true);
+
     slider1_layout = new QHBoxLayout;
     slider1_label = new QLabel("value = 0");
     slider1 = new QSlider(Qt::Horizontal);

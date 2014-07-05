@@ -9,6 +9,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(a_open, SIGNAL(triggered(bool)),this,SLOT(open_clicked()));
     connect(a_save, SIGNAL(triggered(bool)),this,SLOT(save_clicked()));
     connect(a_exit, SIGNAL(triggered(bool)),this,SLOT(exit_clicked()));
+    connect(slider1,SIGNAL(valueChanged(int)), this, SLOT(slider1_change(int)));
+    connect(slider2,SIGNAL(valueChanged(int)), this, SLOT(slider2_change(int)));
     connect(a_calibrate, SIGNAL(triggered(bool)),this,SLOT(calibrate_clicked()));
 	//Buttons
     connect(open_btn, SIGNAL(released()), this, SLOT(open_clicked()));
@@ -16,7 +18,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(save_btn, SIGNAL(released()), this, SLOT(save_clicked()));
     connect(calibrate_btn, SIGNAL(released()), this, SLOT(calibrate_clicked()));
 
-    openImage();
+    loadVideo();
+    slider1->setValue(filter_param.frame_num);
 }
 
 MainWindow::~MainWindow()
@@ -24,12 +27,27 @@ MainWindow::~MainWindow()
 }
 
 //Open image function call
-void MainWindow::openImage()
+void MainWindow::loadVideo()
 {
-    imagerd = cvLoadImage(file_name);
+    if (!filter_param.isVideo)
+    {
+        imagerd = cvLoadImage(filter_param.filename.toLocal8Bit().data());
+        slider1->setValue(0);
+        slider2->setValue(0);
+    }
+    else
+    {
+        capture = cvCreateFileCapture( filter_param.filename.toLocal8Bit().data() );
+        if (capture == NULL)
+            return;
+        imagerd = cvQueryFrame( capture );
+        slider2->setMaximum((int) cvGetCaptureProperty( capture, CV_CAP_PROP_FRAME_COUNT ));
+        slider1->setMaximum((int) cvGetCaptureProperty( capture, CV_CAP_PROP_FRAME_COUNT ));
+        slider1->setValue(filter_param.frame_num);
+        slider2->setValue(slider1->maximum()-1);
+    }
 
-    imageView = QImage((const unsigned char*)(imagerd->imageData), imagerd->width,imagerd->height,QImage::Format_RGB888).rgbSwapped();
-    preview->setPixmap(QPixmap::fromImage(imageView.scaled(prev_size,floor((prev_size/imagerd->width)*imagerd->height),Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
+    updatePrev();
 }
 
 void MainWindow::exit_clicked()
@@ -51,14 +69,27 @@ void MainWindow::analysis_clicked()
     file_name = QFileDialog::getOpenFileName(this, "Open File", "","Images (*.png *.jpg)").toLocal8Bit().data();
     if (strcmp(file_name,""))
     {
-		openImage();
+        loadVideo();
 	}
+}
+
+void MainWindow::slider1_change(int value)
+{
+    treshold_1 = value;
+    filter_param.frame_num = treshold_1;
+    slider1_label->setText(QString("Start Frame = %1").arg(value));
+    updatePrev();
+}
+
+void MainWindow::slider2_change(int value)
+{
+    treshold_2 = value;
+    slider2_label->setText(QString("End Frame = %1").arg(value));
 }
 
 void MainWindow::updatePrev()
 {
     IplImage *imagesrc;
-    CvCapture *capture;
     if (!filter_param.isVideo)
     {
         imagesrc = cvLoadImage(filter_param.filename.toLocal8Bit().data());
@@ -130,7 +161,17 @@ void MainWindow::calibrate_clicked()
 void MainWindow::open_clicked()
 {
     filter_param.filename = QFileDialog::getOpenFileName(this, "Open File", "","Videos (*.mp4 *.avi *.mov)");
-    trmMosbat::Saveparam(filter_param,"settings.json");
+    if (!filter_param.filename.isEmpty())
+    {
+        filter_param.isVideo = true;
+        capture = cvCreateFileCapture( filter_param.filename.toLocal8Bit().data() );
+        if (capture == NULL)
+            return;
+        trmMosbat::Saveparam(filter_param,"settings.json");
+        slider2->setMaximum((int) cvGetCaptureProperty( capture, CV_CAP_PROP_FRAME_COUNT ));
+        slider1->setMaximum((int) cvGetCaptureProperty( capture, CV_CAP_PROP_FRAME_COUNT ));
+    }
+
 }
 
 void MainWindow::CreateMenu()
@@ -173,6 +214,20 @@ void MainWindow::CreateLayout()
 	button_layout->addWidget(calibrate_btn);
 	button_layout->addWidget(analysis_btn);
     button_layout->addWidget(save_btn);
+
+    //
+    slider1_layout = new QHBoxLayout;
+    slider1_label = new QLabel("Start Frame = 0");
+    slider1 = new QSlider(Qt::Horizontal);
+    slider1_layout->addWidget(slider1_label);
+    slider1_layout->addWidget(slider1);
+
+    slider2_layout = new QHBoxLayout;
+    slider2_label = new QLabel("End Frame = 0");
+    slider2 = new QSlider(Qt::Horizontal);
+    slider2_layout->addWidget(slider2_label);
+    slider2_layout->addWidget(slider2);
+
     //Options
     surface2_layout = new QVBoxLayout;
     surface2_layout->addLayout(option_layout);
@@ -275,6 +330,9 @@ void MainWindow::CreateLayout()
     surface_layout->addLayout(surface2_layout);
 
     //Start making layout
+    main_layout->addLayout(slider1_layout);
+    main_layout->addLayout(slider2_layout);
+    main_layout->addLayout(surface_layout);
     main_layout->addLayout(surface_layout);
     main_layout->addLayout(progress_layout);
     main_layout->addLayout(button_layout);
