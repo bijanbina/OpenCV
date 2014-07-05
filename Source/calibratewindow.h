@@ -110,6 +110,7 @@ private:
     char         *file_name;
     int           framePosition;
     int           surface_height;
+    int           count;
     double        surface_width;
     trmParam      filter_param;
 };

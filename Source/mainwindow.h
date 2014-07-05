@@ -106,10 +106,6 @@ private:
     QwtPlotZoomer   *yt_zoomer;
     QwtPlotZoomer   *vt_zoomer;
     IplImage     	*image;
-    double        	treshold_1;
-    double        	treshold_2;
-    double        	erode_count;
-    double        	dilate_count;
     char		 	*file_name;
     trmParam         filter_param;
 };

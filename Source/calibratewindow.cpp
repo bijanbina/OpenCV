@@ -221,6 +221,7 @@ void CalibrateWindow::state_change(int changed)
     }
     else if (a_result->isChecked())
     {
+        count = 0;
         if (filter_param.edge_1 == filter_param.edge_2 && filter_param.edge_2 == 0 )
         {
             imageView = QImage((const unsigned char*)(imagesrc->imageData), imagesrc->width,imagesrc->height,QImage::Format_Indexed8).rgbSwapped();
@@ -247,7 +248,6 @@ void CalibrateWindow::state_change(int changed)
             CvSeq *poly = NULL;
             trmMosbat *first_plus = new trmMosbat;
             trmMosbat *current_plus = first_plus;
-            int i = 0;
             imgout = cvCloneImage(imagesrc);
             cv::RNG rng(1234);
             while( dummy_seq != NULL )
@@ -256,7 +256,7 @@ void CalibrateWindow::state_change(int changed)
                 CvScalar color = cvScalar(rng.uniform(0,255), rng.uniform(0, 255), rng.uniform(0, 255));
                 if (poly->total == 12)
                 {
-                    i++;
+                    count++;
                     current_plus->next = new trmMosbat(poly,0);
                     current_plus = current_plus->next;
                     cv::Mat mat_temp = imgout;
@@ -266,11 +266,12 @@ void CalibrateWindow::state_change(int changed)
                     cv::line(mat_temp,(current_plus->getRect())[3],(current_plus->getRect())[0],color,2,16);
                     //cv::line(mat_temp,current_plus->center2,current_plus->center3,cvScalar(25,25,200),3);
                     //cv::rectangle(mat_temp,current_plus->getRegion(),color,2,16);
-                    cv::circle( mat_temp, current_plus->middle, 5.0, 0, 2, 1 );
+                    cv::circle( mat_temp, current_plus->middle, 4.0, cvScalar(200,50,0), 6, 1 );
                     //drawMark( mat_temp, current_plus->middle, cvScalar(0) );
                 }
                 dummy_seq = dummy_seq->h_next;
             }
+            vslider1_label->setText(QString("value = %1").arg(count));
             imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_RGB888).rgbSwapped();
             surface->setPixmap(QPixmap::fromImage(imageView.scaled(surface_width,surface_height,Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
         }

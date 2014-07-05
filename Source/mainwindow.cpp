@@ -57,7 +57,22 @@ void MainWindow::analysis_clicked()
 
 void MainWindow::updatePrev()
 {
-    IplImage *imagesrc = cvLoadImage(filter_param.filename.toUtf8().data());
+    IplImage *imagesrc;
+    CvCapture *capture;
+    if (!filter_param.isVideo)
+    {
+        imagesrc = cvLoadImage(filter_param.filename.toLocal8Bit().data());
+    }
+    else
+    {
+        capture = cvCreateFileCapture( filter_param.filename.toLocal8Bit().data() );
+        if (capture == NULL)
+            return;
+        cvSetCaptureProperty(capture,CV_CAP_PROP_POS_FRAMES,filter_param.frame_num);
+        if (!cvGrabFrame( capture ))
+            return;
+        imagesrc = cvQueryFrame( capture );
+    }
     if (imagesrc == NULL)
     {
         return;
@@ -114,11 +129,8 @@ void MainWindow::calibrate_clicked()
 
 void MainWindow::open_clicked()
 {
-    file_name = QFileDialog::getOpenFileName(this, "Open File", "","Images (*.png *.jpg)").toLocal8Bit().data();
-    if (strcmp(file_name,""))
-    {
-		openImage();
-	}
+    filter_param.filename = QFileDialog::getOpenFileName(this, "Open File", "","Videos (*.mp4 *.avi *.mov)");
+    trmMosbat::Saveparam(filter_param,"settings.json");
 }
 
 void MainWindow::CreateMenu()
@@ -269,10 +281,6 @@ void MainWindow::CreateLayout()
     //Side object
     file_name = "../Resources/NA.jpg";
     filter_param = trmMosbat::Loadparam("settings.json");
-    erode_count = 0;
-    dilate_count = 0;
-	treshold_1 = 0;
-	treshold_2 = 0;
     //Window
     Main_Widget->setLayout(main_layout);
     setWindowTitle(trUtf8("Tremor"));
