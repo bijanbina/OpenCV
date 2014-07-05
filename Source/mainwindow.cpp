@@ -55,10 +55,61 @@ void MainWindow::analysis_clicked()
 	}
 }
 
+void MainWindow::updatePrev()
+{
+    IplImage *imagesrc = cvLoadImage(filter_param.filename.toUtf8().data());
+    if (imagesrc == NULL)
+    {
+        return;
+    }
+    IplImage *imgclone = cvCreateImage( cvGetSize(imagesrc), 8, 1 );
+    cvCvtColor( imagesrc, imgclone, CV_BGR2GRAY );
+    if (filter_param.erode)
+        cvErode( imgclone, imgclone , NULL , filter_param.erode );
+    if (filter_param.dilute)
+        cvDilate( imgclone, imgclone , NULL , filter_param.dilute );
+    IplImage *buffer = imgclone;
+    imgclone = CalibrateWindow::doCanny( imgclone, filter_param.edge_1 ,filter_param.edge_2, 3 );
+    cvReleaseImage( &buffer );
+    if (filter_param.bold)
+        CalibrateWindow::bold_filter(imgclone,filter_param.bold);
+    CvSeq* firstContour = NULL;
+    CvMemStorage* cnt_storage = cvCreateMemStorage();
+    cvFindContours(imgclone,cnt_storage,&firstContour,sizeof(CvContour),CV_RETR_TREE,CV_CHAIN_APPROX_SIMPLE);
+    CvMemStorage* poly_storage = cvCreateMemStorage();
+    CvSeq *dummy_seq = firstContour;
+    CvSeq *poly = NULL;
+    trmMosbat *first_plus = new trmMosbat;
+    trmMosbat *current_plus = first_plus;
+    IplImage *imgout = cvCloneImage(imagesrc);
+    while( dummy_seq != NULL )
+    {
+        poly = cvApproxPoly(dummy_seq,sizeof(CvContour),poly_storage, CV_POLY_APPROX_DP,filter_param.corner_min);
+        if (poly->total == 12)
+        {
+            current_plus->next = new trmMosbat(poly,0);
+            current_plus = current_plus->next;
+            //crop
+            cvSetImageROI(imgout, current_plus->getRegion());
+            IplImage *buffer = cvCreateImage(cvGetSize(imgout), imgout->depth, imgout->nChannels);
+            cvCopy(imgout, buffer, NULL);
+            cvResetImageROI(imgout);
+            imgout = cvCloneImage(buffer);
+
+            cvReleaseImage( &buffer );
+            break;
+        }
+        dummy_seq = dummy_seq->h_next;
+    }
+    imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_RGB888).rgbSwapped();
+    preview->setPixmap(QPixmap::fromImage(imageView.scaled(prev_size,floor((prev_size/imgout->width)*imgout->height),Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
+}
+
 void MainWindow::calibrate_clicked()
 {
     calibrate_window = new CalibrateWindow(this);
     filter_param = calibrate_window->start();
+    updatePrev();
 }
 
 void MainWindow::open_clicked()
@@ -228,17 +279,4 @@ void MainWindow::CreateLayout()
     setCentralWidget(Main_Widget);
 //    move
     //setLayoutDirection(Qt::RightToLeft);
-}
-
-
-IplImage* MainWindow::doCanny( IplImage* in, double lowThresh, double highThresh, double aperture )
-{
-    if(in->nChannels != 1)
-    {
-        printf("Not supported\n");
-        exit(0); //Canny only handles gray scale images
-    }
-    IplImage* out = cvCreateImage( cvGetSize( in ) , IPL_DEPTH_8U, 1 );
-    cvCanny( in, out, lowThresh, highThresh, aperture );
-    return( out );
 }

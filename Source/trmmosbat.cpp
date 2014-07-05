@@ -268,6 +268,30 @@ CvPoint* trmMosbat::getRect()
     return rect;
 }
 
+
+CvRect trmMosbat::trmMosbat::getRegion()
+{
+    getRect();
+    CvRect return_data = cvRect(rect[0].x,rect[0].y,rect[0].x,rect[0].y);
+    for( int i = 1; i < 4; i++ )
+    {
+        if ( rect[i].x < return_data.x )
+            return_data.x = rect[i].x;
+        if ( rect[i].y < return_data.y)
+            return_data.y = rect[i].y;
+        if ( rect[i].x > return_data.width )
+            return_data.width = rect[i].x;
+        if ( rect[i].y > return_data.height)
+            return_data.height = rect[i].y;
+    }
+
+    return_data.width = return_data.width - return_data.x;
+    return_data.height = return_data.height - return_data.y;
+
+    return return_data;
+
+}
+
 double trmMosbat::findDerivative(CvPoint pt1, CvPoint pt2, CvPoint pt3, CvPoint pt4,bool reverse)
 {
     long a1 = 4;
@@ -309,7 +333,12 @@ trmParam trmMosbat::Loadparam(char *filename)
             return_data.erode = json_obj.get("Erode",0).asInt();
             return_data.dilute = json_obj.get("Dilate",0).asInt();
             return_data.frame_num = json_obj.get("Start Frame Number",0).asInt();
-            return_data.filename = json_obj.get("File Address",0).asCString();
+            std::string buffer = json_obj.get("File Address","NULL").asString();
+            int len = strlen(buffer.c_str());
+            char *buffer2 = (char *)malloc(len);
+            strncpy(buffer2, buffer.c_str(), len);
+            return_data.filename = buffer2;
+
             const Json::Value edge = json_obj["Edge Detection"];
             if (!edge.empty())
             {
@@ -329,9 +358,10 @@ trmParam trmMosbat::Loadparam(char *filename)
         return_data.edge_2 = 0;
         return_data.corner_min = 0;
     }
+    return return_data;
 }
 
-trmParam trmMosbat::Saveparam(trmParam data,char *filename)
+void trmMosbat::Saveparam(trmParam data,char *filename)
 {
     Json::Value json_main;
     Json::Value edge;

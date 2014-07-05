@@ -7,6 +7,7 @@
 #include <math.h>
 #include <iostream>
 #include <jsoncpp/json/json.h>
+#include <string.h>
 
 #define PI 3.14159265
 
@@ -32,9 +33,10 @@ public:
     double findAngle();
     double findDerivative(CvPoint pt1, CvPoint pt2, CvPoint pt3, CvPoint pt4, bool reverse = false);
     CvPoint *getRect(); //return rectangle which contain plus
+    CvRect   getRegion(); //return rectangle which contain plus
 
     static trmParam Loadparam(char *filename);
-    static trmParam Saveparam(trmParam data, char *filename);
+    static void Saveparam(trmParam data, char *filename);
 
     CvPoint top1;
     CvPoint top2;

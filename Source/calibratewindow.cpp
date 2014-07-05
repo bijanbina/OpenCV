@@ -240,6 +240,7 @@ void CalibrateWindow::state_change(int changed)
                     cv::line(mat_temp,(current_plus->getRect())[2],(current_plus->getRect())[3],color,2,16);
                     cv::line(mat_temp,(current_plus->getRect())[3],(current_plus->getRect())[0],color,2,16);
                     //cv::line(mat_temp,current_plus->center2,current_plus->center3,cvScalar(25,25,200),3);
+                    //cv::rectangle(mat_temp,current_plus->getRegion(),color,2,16);
                     cv::circle( mat_temp, current_plus->middle, 5.0, 0, 2, 1 );
                     //drawMark( mat_temp, current_plus->middle, cvScalar(0) );
                 }
@@ -766,7 +767,7 @@ void CalibrateWindow::CreateLayout(QWidget *parent)
     main_layout->addLayout(button_layout);
     //Side object
     //file_name = "/home/bijan/Downloads/IMG_20140630_213804.jpg";
-    filter_param.filename = "/home/bijan/Pictures/IMG_20140519_090048.jpg";
+    filter_param = trmMosbat::Loadparam("settings.json");
     //default
     treshold_1 = 0;
     treshold_2 = 0;
@@ -774,7 +775,6 @@ void CalibrateWindow::CreateLayout(QWidget *parent)
     treshold_4 = 0;
     surface_width = calib_prev_size;
 
-    filter_param = trmMosbat::Loadparam("settings.json");
 
     if ( filter_param.erode == filter_param.dilute && filter_param.dilute == 0 )
     {
@@ -784,7 +784,7 @@ void CalibrateWindow::CreateLayout(QWidget *parent)
     //Window
     setLayout(main_layout);
     setWindowTitle(trUtf8("Calibration"));
-    setAttribute(Qt::WA_DeleteOnClose);
+    //setAttribute(Qt::WA_DeleteOnClose);
     setWindowFlags(Qt::Window);
     //setSizePolicy(QSizePolicy::Minimum);
     //setLayoutDirection(Qt::RightToLeft);

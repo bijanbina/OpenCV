@@ -22,7 +22,7 @@
 #include <qwt_text_label.h>
 #include <iostream>
 
-#define prev_size 300.0
+#define prev_size 200.0
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -50,7 +50,7 @@ private:
     void CreateLayout();
 	void CreateMenu();
     void openImage();
-    IplImage* doCanny( IplImage* in, double lowThresh, double highThresh, double aperture );
+    void updatePrev();
     IplImage* doPyrDown( IplImage* in, int filter);
 
     QLabel       	*preview;
