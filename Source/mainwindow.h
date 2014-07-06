@@ -31,11 +31,11 @@ struct trm_data
     double v;
     double w;
     int frameNum;
-    trm_data *data;
+    trm_data *next;
 };
 typedef trm_data trmData;
 
-trmData *createTmdata(CvCapture *capture, trmParam param, int startFrame, int endFrame);
+trmData *createTrmdata(CvCapture *capture, trmParam param, int startFrame, int endFrame, QProgressBar *progress, int *size);
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -127,6 +127,7 @@ private:
     QHBoxLayout     *slider2_layout;
     QLabel          *slider2_label;
     CvCapture       *capture;
+    IplImage        *NA_image;
     char		 	*file_name;
     double           treshold_1;
     double           treshold_2;

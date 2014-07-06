@@ -69,27 +69,34 @@ void MainWindow::analysis_clicked()
 {
     int frameNumber = 0;
     frameNumber = filter_param.frame_num;
+    trmData *head,*ptr;
+    int size = 0;
     if (videoLoaded)
     {
-        IplImage *imagesrc;
-        if (capture == NULL)
-            return;
-        cvSetCaptureProperty(capture,CV_CAP_PROP_POS_FRAMES,filter_param.frame_num);
-        if (!cvGrabFrame( capture ))
-            return;
-        imagesrc = cvQueryFrame( capture );
-        if (imagesrc == NULL)
+        head = createTrmdata(capture,filter_param,treshold_1,treshold_2,progress,&size);
+        std::cout << size << std::endl;
+        QVector< double > X(size);
+        QVector< double > Y(size);
+        ptr = head->next;
+        for (int i = 0 ; i < size ; i++)
         {
-            return;
+            if (ptr == NULL)
+                break;
+            X[i] = ptr->x;
+            Y[i] = ptr->y;
+            ptr = ptr->next;
         }
+        xy_curve->setPen( Qt::blue, 4 ),
+        xy_curve->setRenderHint( QwtPlotItem::RenderAntialiased, true );
 
-        trmMosbat *plus_obj = mosbatFromImage(imagesrc,filter_param) ;
-        if (plus_obj != NULL)
-        {
-
-            delete plus_obj;
-        }
-	}
+        QwtSymbol *symbol = new QwtSymbol( QwtSymbol::Ellipse,
+            QBrush( Qt::yellow ), QPen( Qt::red, 2 ), QSize( 8, 8 ) );
+        xy_curve->setSymbol( symbol );
+        xy_curve->setSamples(X,Y);
+        xy_curve->attach(xy_plot);
+        xy_plot->update();
+        progress->setValue(0);
+    }
 }
 
 void MainWindow::slider1_change(int value)
@@ -139,12 +146,17 @@ void MainWindow::updatePrev()
         cvReleaseImage( &imgout );
         delete plus_obj;
     }
+    else
+    {
+        imageView = QImage((const unsigned char*)(NA_image->imageData), NA_image->width,NA_image->height,QImage::Format_RGB888).rgbSwapped();
+        preview->setPixmap(QPixmap::fromImage(imageView.scaled(prev_size,floor((prev_size/NA_image->width)*NA_image->height),Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
+    }
 }
 
 void MainWindow::calibrate_clicked()
 {
     calibrate_window = new CalibrateWindow(this);
-    filter_param = calibrate_window->start();
+    filter_param = calibrate_window->start(filter_param.frame_num);
     updatePrev();
 }
 
@@ -327,7 +339,7 @@ void MainWindow::CreateLayout()
     main_layout->addLayout(progress_layout);
     main_layout->addLayout(button_layout);
     //Side object
-    file_name = "../Resources/NA.jpg";
+    NA_image = cvLoadImage("../Resources/NA.jpg");
     filter_param = trmMosbat::Loadparam("settings.json");
     videoLoaded = false;
     //Window
@@ -338,8 +350,46 @@ void MainWindow::CreateLayout()
     //setLayoutDirection(Qt::RightToLeft);
 }
 
-trmData *createTmdata(CvCapture *capture,trmParam param,int startFrame,int endFrame)
+trmData *createTrmdata(CvCapture *capture,trmParam param,int startFrame,int endFrame,QProgressBar *progress,int *size)
 {
-    trmData *head;
+    trmData *head,*temp,*ptr;
     head = new trmData;
+    head->next = NULL;
+    ptr = head;
+    *size = 0;
+    progress->setMaximum(endFrame - startFrame);
+    for  (int frameNumber = startFrame; frameNumber < endFrame ; frameNumber++)
+    {
+        IplImage *imagesrc;
+        if (capture == NULL)
+            return NULL;
+        cvSetCaptureProperty(capture,CV_CAP_PROP_POS_FRAMES,frameNumber);
+        if (!cvGrabFrame( capture ))
+            return NULL;
+        imagesrc = cvQueryFrame( capture );
+        if (imagesrc == NULL)
+        {
+            return NULL;
+        }
+        trmMosbat *plus_obj = mosbatFromImage(imagesrc,param) ;
+        if (plus_obj != NULL)
+        {
+            temp = new trmData;
+            temp->x = plus_obj->middle.x;
+            temp->y = plus_obj->middle.y;
+            temp->next = NULL;
+            ptr->next = temp;
+            ptr = ptr->next;
+            delete plus_obj;
+            (*size)++;
+        }
+        else
+        {
+            CalibrateWindow *calibrate_window = new CalibrateWindow();
+            calibrate_window->start(frameNumber);
+        }
+        frameNumber++;
+        progress->setValue(frameNumber - startFrame);
+    }
+    return head;
 }

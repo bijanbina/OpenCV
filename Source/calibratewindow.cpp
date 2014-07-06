@@ -839,8 +839,13 @@ void CalibrateWindow::MyFilledCircle( cv::Mat img, cv::Point center )
  cv::circle( img, center, 10.0, 255, thickness, lineType );
 }
 
-trmParam CalibrateWindow::start()
+trmParam CalibrateWindow::start(int startFrame)
 {
+    if (startFrame)
+    {
+        filter_param.frame_num = startFrame;
+        slider1->setValue(filter_param.frame_num);
+    }
     exec();
     return filter_param;
 }

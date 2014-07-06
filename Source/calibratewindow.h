@@ -14,7 +14,7 @@ class CalibrateWindow : public QDialog {
 public:
     explicit CalibrateWindow(QWidget *parent = 0);
     ~CalibrateWindow();
-    trmParam start();
+    trmParam start(int startFrame = 0);
 
 
     void resizeEvent ( QResizeEvent * event )
