@@ -74,6 +74,7 @@ private:
     QAction		 *a_equal;
     QAction		 *a_frame;
     QAction		 *a_width;
+    QAction		 *a_corner;
     IplImage     *image;
     IplImage     *imgout;
     IplImage     *imagesrc; 

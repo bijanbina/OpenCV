@@ -25,6 +25,7 @@ CalibrateWindow::CalibrateWindow(QWidget *parent) :
     connect(a_equal, SIGNAL(triggered(bool)),this,SLOT(equal_clicked(bool)));
     connect(a_frame, SIGNAL(triggered(bool)),this,SLOT(frame_clicked(bool)));
     connect(a_replace, SIGNAL(triggered(bool)),this,SLOT(replace_clicked()));
+    connect(a_corner, SIGNAL(triggered(bool)),this,SLOT(state_change()));
     connect(a_width, SIGNAL(triggered(bool)),this,SLOT(width_clicked()));
 
     if (!filter_param.isVideo)
@@ -194,7 +195,7 @@ void CalibrateWindow::state_change(int changed)
         while( dummy_seq != NULL )
         {
             poly = cvApproxPoly(dummy_seq,sizeof(CvContour),poly_storage, CV_POLY_APPROX_DP,treshold_3);
-            if (poly->total == 12)
+            if (poly->total == 12 || a_corner->isChecked())
             {
                 for(i = 0; i < poly->total; i++)
                 {
@@ -500,7 +501,7 @@ void CalibrateWindow::next_clicked()
         a_edge->setChecked(true);
         a_result->setChecked(false);
         state_change(1);
-        chk1->setChecked(false);
+        chk1->setChecked(true);
         chk2->setChecked(true);
         slider1->setValue(filter_param.edge_1);
         slider2->setValue(filter_param.edge_2);
@@ -725,12 +726,14 @@ void CalibrateWindow::CreateMenu()
     option_menu = menu->addMenu("Option");
     a_equal = option_menu->addAction("Erode = Dilute");
     a_width = option_menu->addAction("Set image width");
+    a_corner = option_menu->addAction("Show all corner");
 
     a_edge->setCheckable(true);
     a_loop->setCheckable(true);
     a_result->setCheckable(true);
     a_equal->setCheckable(true);
     a_frame->setCheckable(true);
+    a_corner->setCheckable(true);
 
     a_edge->setChecked(true);
     a_equal->setChecked(true);
