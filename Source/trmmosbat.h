@@ -31,12 +31,14 @@ typedef trm_param trmParam;
 class trmMosbat
 {
 public:
-    trmMosbat(CvSeq *points,double previous);
     trmMosbat();
     double findAngle();
     double findDerivative(CvPoint pt1, CvPoint pt2, CvPoint pt3, CvPoint pt4, bool reverse = false);
     CvPoint *getRect(); //return rectangle which contain plus
     CvRect   getRegion(); //return rectangle which contain plus
+    static void bold_filter(IplImage *in,int kernel_size);
+    static IplImage* doCanny( IplImage* in, double lowThresh, double highThresh, double aperture );
+    double dist_cv(CvPoint pt1, CvPoint pt2);
 
     static trmParam Loadparam(char *filename);
     static void Saveparam(trmParam data, char *filename);
@@ -54,15 +56,12 @@ public:
     CvPoint center3;
     CvPoint center4;
     CvPoint middle;
-    trmMosbat *next;
-
-private:
-    double dist_cv(CvPoint pt1, CvPoint pt2);
 
     CvPoint *rect;
     double   edge;
     double   pr;//previeos angle
 
 };
-
+trmMosbat *mosbatFromImage(IplImage *imagesrc,trmParam data);
+trmMosbat *create_from_point(CvSeq *points,double previous);
 #endif // TRMMOSBAT_H

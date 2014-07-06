@@ -15,8 +15,6 @@ public:
     explicit CalibrateWindow(QWidget *parent = 0);
     ~CalibrateWindow();
     trmParam start();
-    static void bold_filter(IplImage *in,int kernel_size);
-    static IplImage* doCanny( IplImage* in, double lowThresh, double highThresh, double aperture );
 
 
     void resizeEvent ( QResizeEvent * event )

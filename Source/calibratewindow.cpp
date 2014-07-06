@@ -151,13 +151,13 @@ void CalibrateWindow::state_change(int changed)
             if ( chk2->isChecked() )
             {
                 IplImage* buffer = imgout;
-                imgout = doCanny( imgout, treshold_1 ,treshold_2, 3 );
+                imgout = trmMosbat::doCanny( imgout, treshold_1 ,treshold_2, 3 );
                 imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
                 cvReleaseImage( &buffer );
             }
             else
             {
-                imgout = doCanny( image, treshold_1 ,treshold_2, 3 );
+                imgout = trmMosbat::doCanny( image, treshold_1 ,treshold_2, 3 );
                 imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
             }
         }
@@ -176,7 +176,7 @@ void CalibrateWindow::state_change(int changed)
         imgout = cvCloneImage(image);
         if (chk1->isChecked())
         {
-            bold_filter(imgout,treshold_1);
+            trmMosbat::bold_filter(imgout,treshold_1);
         }
         IplImage *imgclone = cvCloneImage(imgout);
         CvSeq* firstContour = NULL;
@@ -236,18 +236,17 @@ void CalibrateWindow::state_change(int changed)
             if (filter_param.dilute)
                 cvDilate( imgclone, imgclone , NULL , filter_param.dilute );
             IplImage *buffer = imgclone;
-            imgclone = doCanny( imgclone, filter_param.edge_1 ,filter_param.edge_2, 3 );
+            imgclone = trmMosbat::doCanny( imgclone, filter_param.edge_1 ,filter_param.edge_2, 3 );
             cvReleaseImage( &buffer );
             if (filter_param.bold)
-                bold_filter(imgclone,filter_param.bold);
+                trmMosbat::bold_filter(imgclone,filter_param.bold);
             CvSeq* firstContour = NULL;
             CvMemStorage* cnt_storage = cvCreateMemStorage();
             cvFindContours(imgclone,cnt_storage,&firstContour,sizeof(CvContour),CV_RETR_TREE,CV_CHAIN_APPROX_SIMPLE);
             CvMemStorage* poly_storage = cvCreateMemStorage();
             CvSeq *dummy_seq = firstContour;
             CvSeq *poly = NULL;
-            trmMosbat *first_plus = new trmMosbat;
-            trmMosbat *current_plus = first_plus;
+            trmMosbat *plus;
             imgout = cvCloneImage(imagesrc);
             cv::RNG rng(1234);
             while( dummy_seq != NULL )
@@ -257,17 +256,20 @@ void CalibrateWindow::state_change(int changed)
                 if (poly->total == 12)
                 {
                     count++;
-                    current_plus->next = new trmMosbat(poly,0);
-                    current_plus = current_plus->next;
-                    cv::Mat mat_temp = imgout;
-                    cv::line(mat_temp,(current_plus->getRect())[0],(current_plus->getRect())[1],color,2,16);
-                    cv::line(mat_temp,(current_plus->getRect())[1],(current_plus->getRect())[2],color,2,16);
-                    cv::line(mat_temp,(current_plus->getRect())[2],(current_plus->getRect())[3],color,2,16);
-                    cv::line(mat_temp,(current_plus->getRect())[3],(current_plus->getRect())[0],color,2,16);
-                    //cv::line(mat_temp,current_plus->center2,current_plus->center3,cvScalar(25,25,200),3);
-                    //cv::rectangle(mat_temp,current_plus->getRegion(),color,2,16);
-                    cv::circle( mat_temp, current_plus->middle, 4.0, cvScalar(200,50,0), 6, 1 );
-                    //drawMark( mat_temp, current_plus->middle, cvScalar(0) );
+                    plus = create_from_point(poly,0);
+                    if (plus != NULL)
+                    {
+                        cv::Mat mat_temp = imgout;
+                        cv::line(mat_temp,(plus->getRect())[0],(plus->getRect())[1],color,2,16);
+                        cv::line(mat_temp,(plus->getRect())[1],(plus->getRect())[2],color,2,16);
+                        cv::line(mat_temp,(plus->getRect())[2],(plus->getRect())[3],color,2,16);
+                        cv::line(mat_temp,(plus->getRect())[3],(plus->getRect())[0],color,2,16);
+                        //cv::line(mat_temp,plus->center2,plus->center3,cvScalar(25,25,200),3);
+                        //cv::rectangle(mat_temp,plus->getRegion(),color,2,16);
+                        cv::circle( mat_temp, plus->middle, 4.0, cvScalar(200,50,0), 6, 1 );
+                        //drawMark( mat_temp, plus->middle, cvScalar(0) );
+                        delete plus;
+                    }
                 }
                 dummy_seq = dummy_seq->h_next;
             }
@@ -465,7 +467,7 @@ void CalibrateWindow::back_clicked()
         if (filter_param.dilute)
             cvDilate( image, image , NULL , filter_param.dilute );
         IplImage *buffer = image;
-        image = doCanny( image, filter_param.edge_1 ,filter_param.edge_2, 3 );
+        image = trmMosbat::doCanny( image, filter_param.edge_1 ,filter_param.edge_2, 3 );
         cvReleaseImage( &buffer );
         a_loop->setChecked(true);
         a_edge->setChecked(false);
@@ -829,19 +831,6 @@ void CalibrateWindow::CreateLayout(QWidget *parent)
     //setLayoutDirection(Qt::RightToLeft);
 }
 
-
-IplImage* CalibrateWindow::doCanny( IplImage* in, double lowThresh, double highThresh, double aperture )
-{
-    if(in->nChannels != 1)
-    {
-        printf("Not supported\n");
-        exit(0); //Canny only handles gray scale images
-    }
-    IplImage *out = cvCreateImage( cvGetSize( in ) , IPL_DEPTH_8U, 1 );
-    cvCanny( in, out, lowThresh, highThresh, aperture );
-    return( out );
-}
-
 void CalibrateWindow::MyFilledCircle( cv::Mat img, cv::Point center )
 {
  int thickness = 3;
@@ -869,32 +858,6 @@ void CalibrateWindow::find_corner(IplImage* in ,double quality_level ,double min
     IplImage out = grayFrame;
     imageView = QImage((const unsigned char*)(out.imageData), out.width,out.height,QImage::Format_Indexed8).rgbSwapped();
     surface->setPixmap(QPixmap::fromImage(imageView.scaled(surface_width,floor((surface_width/imageView.width())*imageView.height()),Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
-}
-
-void CalibrateWindow::bold_filter(IplImage *in,int kernel_size)
-{
-    cv::Mat grayFrame = cv::Mat(in);
-    unsigned char imgdata[grayFrame.cols][grayFrame.rows];
-    for (int y = 0 ; y < grayFrame.rows ; y++)
-    {
-        const unsigned char* ptr = (unsigned char*)(grayFrame.data + y * grayFrame.step);
-        for (int x = 0 ; x < grayFrame.cols ; x++ )
-        {
-            imgdata[x][y] = *ptr;
-            ptr++;
-        }
-    }
-    for (int x = 0 ; x < grayFrame.cols - kernel_size ; x++)
-    {
-        for (int y = 0 ; y < grayFrame.rows - kernel_size ; y++ )
-        {
-            if (imgdata[x+kernel_size/2][y+kernel_size/2] == 255 )
-            {
-                cvRectangle(in,cvPoint(x,y),cvPoint(x+kernel_size,y+kernel_size),cvScalarAll(255));
-
-            }
-        }
-    }
 }
 
 void CalibrateWindow::drawMark(cv::Mat img ,CvPoint pt,CvScalar color)

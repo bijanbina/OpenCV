@@ -45,6 +45,7 @@ void MainWindow::loadVideo()
         slider1->setMaximum((int) cvGetCaptureProperty( capture, CV_CAP_PROP_FRAME_COUNT ));
         slider1->setValue(filter_param.frame_num);
         slider2->setValue(slider1->maximum()-1);
+        videoLoaded = true;
     }
 
     updatePrev();
@@ -66,10 +67,28 @@ void MainWindow::save_clicked()
 
 void MainWindow::analysis_clicked()
 {
-    file_name = QFileDialog::getOpenFileName(this, "Open File", "","Images (*.png *.jpg)").toLocal8Bit().data();
-    if (strcmp(file_name,""))
+    int frameNumber = 0;
+    frameNumber = filter_param.frame_num;
+    if (videoLoaded)
     {
-        loadVideo();
+        IplImage *imagesrc;
+        if (capture == NULL)
+            return;
+        cvSetCaptureProperty(capture,CV_CAP_PROP_POS_FRAMES,filter_param.frame_num);
+        if (!cvGrabFrame( capture ))
+            return;
+        imagesrc = cvQueryFrame( capture );
+        if (imagesrc == NULL)
+        {
+            return;
+        }
+
+        trmMosbat *plus_obj = mosbatFromImage(imagesrc,filter_param) ;
+        if (plus_obj != NULL)
+        {
+
+            delete plus_obj;
+        }
 	}
 }
 
@@ -96,7 +115,6 @@ void MainWindow::updatePrev()
     }
     else
     {
-        capture = cvCreateFileCapture( filter_param.filename.toLocal8Bit().data() );
         if (capture == NULL)
             return;
         cvSetCaptureProperty(capture,CV_CAP_PROP_POS_FRAMES,filter_param.frame_num);
@@ -108,47 +126,19 @@ void MainWindow::updatePrev()
     {
         return;
     }
-    IplImage *imgclone = cvCreateImage( cvGetSize(imagesrc), 8, 1 );
-    cvCvtColor( imagesrc, imgclone, CV_BGR2GRAY );
-    if (filter_param.erode)
-        cvErode( imgclone, imgclone , NULL , filter_param.erode );
-    if (filter_param.dilute)
-        cvDilate( imgclone, imgclone , NULL , filter_param.dilute );
-    IplImage *buffer = imgclone;
-    imgclone = CalibrateWindow::doCanny( imgclone, filter_param.edge_1 ,filter_param.edge_2, 3 );
-    cvReleaseImage( &buffer );
-    if (filter_param.bold)
-        CalibrateWindow::bold_filter(imgclone,filter_param.bold);
-    CvSeq* firstContour = NULL;
-    CvMemStorage* cnt_storage = cvCreateMemStorage();
-    cvFindContours(imgclone,cnt_storage,&firstContour,sizeof(CvContour),CV_RETR_TREE,CV_CHAIN_APPROX_SIMPLE);
-    CvMemStorage* poly_storage = cvCreateMemStorage();
-    CvSeq *dummy_seq = firstContour;
-    CvSeq *poly = NULL;
-    trmMosbat *first_plus = new trmMosbat;
-    trmMosbat *current_plus = first_plus;
-    IplImage *imgout = cvCloneImage(imagesrc);
-    while( dummy_seq != NULL )
-    {
-        poly = cvApproxPoly(dummy_seq,sizeof(CvContour),poly_storage, CV_POLY_APPROX_DP,filter_param.corner_min);
-        if (poly->total == 12)
-        {
-            current_plus->next = new trmMosbat(poly,0);
-            current_plus = current_plus->next;
-            //crop
-            cvSetImageROI(imgout, current_plus->getRegion());
-            IplImage *buffer = cvCreateImage(cvGetSize(imgout), imgout->depth, imgout->nChannels);
-            cvCopy(imgout, buffer, NULL);
-            cvResetImageROI(imgout);
-            imgout = cvCloneImage(buffer);
 
-            cvReleaseImage( &buffer );
-            break;
-        }
-        dummy_seq = dummy_seq->h_next;
+    trmMosbat *plus_obj = mosbatFromImage(imagesrc,filter_param) ;
+    if (plus_obj != NULL)
+    {
+        cvSetImageROI(imagesrc, plus_obj->getRegion());
+        IplImage *imgout  = cvCreateImage(cvGetSize(imagesrc), imagesrc->depth, imagesrc->nChannels);
+        cvCopy(imagesrc, imgout, NULL);
+        cvResetImageROI(imagesrc);
+        imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_RGB888).rgbSwapped();
+        preview->setPixmap(QPixmap::fromImage(imageView.scaled(prev_size,floor((prev_size/imgout->width)*imgout->height),Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
+        cvReleaseImage( &imgout );
+        delete plus_obj;
     }
-    imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_RGB888).rgbSwapped();
-    preview->setPixmap(QPixmap::fromImage(imageView.scaled(prev_size,floor((prev_size/imgout->width)*imgout->height),Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
 }
 
 void MainWindow::calibrate_clicked()
@@ -170,6 +160,7 @@ void MainWindow::open_clicked()
         trmMosbat::Saveparam(filter_param,"settings.json");
         slider2->setMaximum((int) cvGetCaptureProperty( capture, CV_CAP_PROP_FRAME_COUNT ));
         slider1->setMaximum((int) cvGetCaptureProperty( capture, CV_CAP_PROP_FRAME_COUNT ));
+        videoLoaded = true;
     }
 
 }
@@ -333,16 +324,22 @@ void MainWindow::CreateLayout()
     main_layout->addLayout(slider1_layout);
     main_layout->addLayout(slider2_layout);
     main_layout->addLayout(surface_layout);
-    main_layout->addLayout(surface_layout);
     main_layout->addLayout(progress_layout);
     main_layout->addLayout(button_layout);
     //Side object
     file_name = "../Resources/NA.jpg";
     filter_param = trmMosbat::Loadparam("settings.json");
+    videoLoaded = false;
     //Window
     Main_Widget->setLayout(main_layout);
     setWindowTitle(trUtf8("Tremor"));
     setCentralWidget(Main_Widget);
 //    move
     //setLayoutDirection(Qt::RightToLeft);
+}
+
+trmData *createTmdata(CvCapture *capture,trmParam param,int startFrame,int endFrame)
+{
+    trmData *head;
+    head = new trmData;
 }

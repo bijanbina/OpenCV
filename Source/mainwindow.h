@@ -24,6 +24,19 @@
 
 #define prev_size 200.0
 
+struct trm_data
+{
+    int x;
+    int y;
+    double v;
+    double w;
+    int frameNum;
+    trm_data *data;
+};
+typedef trm_data trmData;
+
+trmData *createTmdata(CvCapture *capture, trmParam param, int startFrame, int endFrame);
+
 class MainWindow : public QMainWindow {
     Q_OBJECT
 public:
@@ -117,6 +130,7 @@ private:
     char		 	*file_name;
     double           treshold_1;
     double           treshold_2;
+    double           videoLoaded;
     trmParam         filter_param;
 };
 
