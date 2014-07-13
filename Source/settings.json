@@ -1,14 +1,14 @@
 {
-   "Bold" : 1,
+   "Bold" : 2,
    "Calibre Image Width" : 1000,
-   "Corner Minimum Distance" : 8,
-   "Dilate" : 2,
+   "Corner Minimum Distance" : 6,
+   "Dilate" : 12,
    "Edge Detection" : {
-      "Treshold 1" : 752.0,
-      "Treshold 2" : 250.0
+      "Treshold 1" : 191.0,
+      "Treshold 2" : 63.0
    },
-   "Erode" : 2,
-   "File Address" : "/home/bijan/Project/OpenCV/Source/DSCF1203.MOV",
+   "Erode" : 12,
+   "File Address" : "/home/bijan/Downloads/DSCF1210.MOV",
    "Is Video" : true,
-   "Start Frame Number" : 511
+   "Start Frame Number" : 438
 }

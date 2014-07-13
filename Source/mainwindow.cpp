@@ -145,12 +145,28 @@ void MainWindow::updatePrev()
         preview->setPixmap(QPixmap::fromImage(imageView.scaled(prev_size,floor((prev_size/imgout->width)*imgout->height),Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
         cvReleaseImage( &imgout );
         delete plus_obj;
+        return;
     }
-    else
+    else if (filter_param.bold)
     {
-        imageView = QImage((const unsigned char*)(NA_image->imageData), NA_image->width,NA_image->height,QImage::Format_RGB888).rgbSwapped();
-        preview->setPixmap(QPixmap::fromImage(imageView.scaled(prev_size,floor((prev_size/NA_image->width)*NA_image->height),Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
+        int temp = filter_param.bold;
+        filter_param.bold = 0;
+        plus_obj = mosbatFromImage(imagesrc,filter_param) ;
     }
+    if (plus_obj != NULL)
+    {
+        cvSetImageROI(imagesrc, plus_obj->getRegion());
+        IplImage *imgout  = cvCreateImage(cvGetSize(imagesrc), imagesrc->depth, imagesrc->nChannels);
+        cvCopy(imagesrc, imgout, NULL);
+        cvResetImageROI(imagesrc);
+        imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_RGB888).rgbSwapped();
+        preview->setPixmap(QPixmap::fromImage(imageView.scaled(prev_size,floor((prev_size/imgout->width)*imgout->height),Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
+        cvReleaseImage( &imgout );
+        delete plus_obj;
+        return;
+    }
+    imageView = QImage((const unsigned char*)(NA_image->imageData), NA_image->width,NA_image->height,QImage::Format_RGB888).rgbSwapped();
+    preview->setPixmap(QPixmap::fromImage(imageView.scaled(prev_size,floor((prev_size/NA_image->width)*NA_image->height),Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
 }
 
 void MainWindow::calibrate_clicked()

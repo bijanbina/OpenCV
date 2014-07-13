@@ -4,8 +4,10 @@ Impression
 ===================================================================
 • None of ur business
   
-for install just run follow command in terminal:
-autoreconf -i;./configure;make;sudo make install
+Build
+===================================================================
+qmake -o Makefile openCV.pro > /dev/null
+make -s
 
 Contribute
 ===================================================================
