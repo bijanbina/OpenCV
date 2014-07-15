@@ -1,8 +1,8 @@
 -------------------- Besme allah Rahman Rahim ---------------------
 
-Impression
+What it does
 ===================================================================
-• None of ur business
+• Is none of ur business
   
 Build
 ===================================================================
@@ -12,4 +12,3 @@ make -s
 Contribute
 ===================================================================
 git commit -a -m "Erode and Dilute added";git push -u origin master
-
