@@ -28,10 +28,12 @@ CalibrateWindow::CalibrateWindow(QWidget *parent) :
     connect(a_corner, SIGNAL(triggered(bool)),this,SLOT(state_change()));
     connect(a_width, SIGNAL(triggered(bool)),this,SLOT(width_clicked()));
 
-    if (!filter_param.isVideo)
+    filename = filter_param.filename;
+    isVideo = filter_param.isVideo;
+    if (!isVideo)
     {
-        imagesrc = cvLoadImage(filter_param.filename.toLocal8Bit().data());
-        image = cvLoadImage(filter_param.filename.toLocal8Bit().data(),CV_LOAD_IMAGE_GRAYSCALE);
+        imagesrc = cvLoadImage(filename.toLocal8Bit().data());
+        image = cvLoadImage(filename.toLocal8Bit().data(),CV_LOAD_IMAGE_GRAYSCALE);
 
         slider1->setValue(filter_param.edge_1);
         slider2->setValue(filter_param.edge_2);
@@ -41,7 +43,7 @@ CalibrateWindow::CalibrateWindow(QWidget *parent) :
     }
     else
     {
-        capture = cvCreateFileCapture( filter_param.filename.toLocal8Bit().data() );
+        capture = cvCreateFileCapture( filename.toLocal8Bit().data() );
         if (capture == NULL)
             return;
         imagesrc = cvQueryFrame( capture );
@@ -406,10 +408,10 @@ void CalibrateWindow::chk2_change()
 
 void CalibrateWindow::save_clicked()
 {
-    filter_param.filename = QFileDialog::getSaveFileName(this, "Save File", "","");
-    if (!filter_param.filename.isEmpty() && !imageView.isNull())
+    filename = QFileDialog::getSaveFileName(this, "Save File", "","");
+    if (!filename.isEmpty() && !imageView.isNull())
     {
-        QPixmap::fromImage(imageView).save(filter_param.filename.toLocal8Bit().data(),"PNG",100);
+        QPixmap::fromImage(imageView).save(filename.toLocal8Bit().data(),"PNG",100);
 	}
 }
 
@@ -562,11 +564,11 @@ void CalibrateWindow::replace_clicked()
 
 void CalibrateWindow::open_clicked()
 {
-    filter_param.filename = QFileDialog::getOpenFileName(this, "Open File", "","Videos (*.mp4 *.avi *.mov)");
-    if (!filter_param.filename.isEmpty())
+    filename = QFileDialog::getOpenFileName(this, "Open File", "","Videos (*.mp4 *.avi *.mov)");
+    if (!filename.isEmpty())
     {
-        filter_param.isVideo = true;
-        capture = cvCreateFileCapture( filter_param.filename.toLocal8Bit().data() );
+        isVideo = true;
+        capture = cvCreateFileCapture( filename.toLocal8Bit().data() );
         if (capture == NULL)
             return;
         imagesrc = cvQueryFrame( capture );
@@ -591,12 +593,12 @@ void CalibrateWindow::open_clicked()
 
 void CalibrateWindow::openimage_clicked()
 {
-    filter_param.filename = QFileDialog::getOpenFileName(this, "Open File", "","Images (*.png *.jpg)");
-    if (!filter_param.filename.isEmpty())
+    filename = QFileDialog::getOpenFileName(this, "Open File", "","Images (*.png *.jpg)");
+    if (!filename.isEmpty())
     {
-        filter_param.isVideo = false;
-        imagesrc = cvLoadImage(filter_param.filename.toLocal8Bit().data());
-        image = cvLoadImage(filter_param.filename.toLocal8Bit().data(),CV_LOAD_IMAGE_GRAYSCALE);
+        isVideo = false;
+        imagesrc = cvLoadImage(filename.toLocal8Bit().data());
+        image = cvLoadImage(filename.toLocal8Bit().data(),CV_LOAD_IMAGE_GRAYSCALE);
         a_frame->setEnabled(false);
         a_frame->setChecked(false);
         a_loop->setChecked(false);
@@ -844,7 +846,7 @@ void CalibrateWindow::MyFilledCircle( cv::Mat img, cv::Point center )
 
 trmParam CalibrateWindow::start(int startFrame)
 {
-    if (startFrame && filter_param.isVideo)
+    if (startFrame && isVideo)
     {
         filter_param.frame_num = startFrame;
         slider1->setValue(filter_param.frame_num);

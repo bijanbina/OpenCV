@@ -106,11 +106,12 @@ private:
     double        treshold_2;
     double        treshold_3;
     double        treshold_4;
-    char         *file_name;
     int           framePosition;
     int           surface_height;
     int           count;
     double        surface_width;
+    QString       filename;
+    bool          isVideo;
     trmParam      filter_param;
 };
 
