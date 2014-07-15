@@ -19,7 +19,6 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(calibrate_btn, SIGNAL(released()), this, SLOT(calibrate_clicked()));
 
     loadVideo();
-    slider1->setValue(filter_param.frame_num);
 }
 
 MainWindow::~MainWindow()
@@ -34,6 +33,8 @@ void MainWindow::loadVideo()
         imagerd = cvLoadImage(filter_param.filename.toLocal8Bit().data());
         slider1->setValue(0);
         slider2->setValue(0);
+        slider1->setEnabled(false);
+        slider2->setEnabled(false);
     }
     else
     {
@@ -41,6 +42,8 @@ void MainWindow::loadVideo()
         if (capture == NULL)
             return;
         imagerd = cvQueryFrame( capture );
+        slider1->setEnabled(true);
+        slider2->setEnabled(true);
         slider2->setMaximum((int) cvGetCaptureProperty( capture, CV_CAP_PROP_FRAME_COUNT ));
         slider1->setMaximum((int) cvGetCaptureProperty( capture, CV_CAP_PROP_FRAME_COUNT ));
         slider1->setValue(filter_param.frame_num);

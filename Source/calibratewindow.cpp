@@ -116,7 +116,7 @@ void CalibrateWindow::state_change(int changed)
         vslider1->setEnabled(false);
         vslider2->setEnabled(false);
     }
-    if (a_edge->isChecked())
+    else if (a_edge->isChecked())
     {
         if ( chk2->isChecked() )
         {
@@ -622,9 +622,9 @@ void CalibrateWindow::openimage_clicked()
 
 void CalibrateWindow::width_clicked()
 {
-    int input = QInputDialog::getInt(this,"Diplay Width","Image Width (200,2000)",surface_width,200,2000);;
-    int diff_x = surface_width - input;
-    surface_width = input;
+    filter_param.calibre_width = QInputDialog::getInt(this,"Diplay Width","Image Width (200,2000)",surface_width,200,2000);;
+    int diff_x = surface_width - filter_param.calibre_width;
+    surface_width = filter_param.calibre_width;
     int diff_y = surface_height - floor((surface_width/image->width)*image->height);
     surface_height = floor((surface_width/image->width)*image->height);
     state_change();
@@ -844,7 +844,7 @@ void CalibrateWindow::MyFilledCircle( cv::Mat img, cv::Point center )
 
 trmParam CalibrateWindow::start(int startFrame)
 {
-    if (startFrame)
+    if (startFrame && filter_param.isVideo)
     {
         filter_param.frame_num = startFrame;
         slider1->setValue(filter_param.frame_num);

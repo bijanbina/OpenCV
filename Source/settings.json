@@ -1,14 +1,14 @@
 {
-   "Bold" : 2,
-   "Calibre Image Width" : 1000,
+   "Bold" : 3,
+   "Calibre Image Width" : 700,
    "Corner Minimum Distance" : 6,
    "Dilate" : 12,
    "Edge Detection" : {
-      "Treshold 1" : 191.0,
-      "Treshold 2" : 63.0
+      "Treshold 1" : 335.0,
+      "Treshold 2" : 111.0
    },
    "Erode" : 12,
-   "File Address" : "/home/bijan/Downloads/DSCF1210.MOV",
-   "Is Video" : true,
-   "Start Frame Number" : 438
+   "File Address" : "../Resources/Test.jpg",
+   "Is Video" : false,
+   "Start Frame Number" : 99
 }
