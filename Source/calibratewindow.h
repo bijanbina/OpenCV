@@ -7,6 +7,10 @@
 #include <cv.h>
 #include <trmmosbat.h>
 
+#define TRM_STATE_FRAME 0
+#define TRM_STATE_EDGE 1
+#define TRM_STATE_CORNER 2
+#define TRM_STATE_RESULT 3
 
 class CalibrateWindow : public QDialog {
     Q_OBJECT
@@ -60,10 +64,6 @@ private:
     QAction		 *a_open;
     QAction		 *a_open_image;
     QAction		 *a_replace;
-    QAction		 *a_frame;
-    QAction		 *a_edge;
-    QAction		 *a_loop;
-    QAction		 *a_result;
     QAction		 *a_about;
     QAction		 *a_equal;
     QAction		 *a_width;
@@ -102,6 +102,7 @@ private:
     int           framePosition;
     int           surface_height;
     int           count;
+    int           state;
     double        surface_width;
     QString       filename;
     bool          isVideo;

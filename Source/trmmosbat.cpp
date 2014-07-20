@@ -339,9 +339,9 @@ trmParam trmMosbat::Loadparam(char *filename)
         Json::Reader reader;
         if (reader.parse(QString(json_file.readAll()).toUtf8().data(), json_obj))
         {
-            return_data.bold = json_obj.get("Bold",0).asInt();
-            return_data.erode = json_obj.get("Erode",0).asInt();
-            return_data.dilute = json_obj.get("Dilate",0).asInt();
+            return_data.bold = json_obj.get("Bold",1).asInt();
+            return_data.erode = json_obj.get("Erode",1).asInt();
+            return_data.dilute = json_obj.get("Dilate",1).asInt();
             return_data.calibre_width = json_obj.get("Calibre Image Width",calib_prev_size).asInt();
             return_data.frame_num = json_obj.get("Start Frame Number",0).asInt();
             return_data.isVideo = json_obj.get("Is Video",false).asBool();
@@ -354,8 +354,8 @@ trmParam trmMosbat::Loadparam(char *filename)
             const Json::Value edge = json_obj["Edge Detection"];
             if (!edge.empty())
             {
-                return_data.edge_1 = edge.get("Treshold 1",0).asDouble();
-                return_data.edge_2 = edge.get("Treshold 2",0).asDouble();
+                return_data.edge_1 = edge.get("Treshold 1",99).asDouble();
+                return_data.edge_2 = edge.get("Treshold 2",33).asDouble();
             }
             return_data.corner_min = json_obj.get("Corner Minimum Distance",0).asInt();
         }
@@ -363,12 +363,16 @@ trmParam trmMosbat::Loadparam(char *filename)
     }
     else
     {
-        return_data.bold = 0;
-        return_data.erode = 0;
-        return_data.dilute = 0;
-        return_data.edge_1 = 0;
-        return_data.edge_2 = 0;
-        return_data.corner_min = 0;
+        return_data.bold = 1;
+        return_data.erode = 12;
+        return_data.dilute = 12;
+        return_data.edge_1 = 383;
+        return_data.edge_2 = 127;
+        return_data.corner_min = 11;
+        return_data.filename = "../Resources/Test.jpg";
+        return_data.isVideo = false;
+        return_data.frame_num = 0;
+        return_data.calibre_width = calib_prev_size;
     }
     return return_data;
 }

@@ -49,11 +49,7 @@ CalibrateWindow::CalibrateWindow(QWidget *parent) :
         image = cvCreateImage( cvGetSize(imagesrc), 8, 1 );
         cvCvtColor( imagesrc, image, CV_BGR2GRAY );
         chk2->setChecked(false);
-        a_frame->setEnabled(true);
-        a_frame->setChecked(true);
-        a_loop->setChecked(false);
-        a_edge->setChecked(false);
-        a_result->setChecked(false);
+        state = TRM_STATE_FRAME;
 
         option_menu->addAction(a_width);
 
@@ -95,7 +91,7 @@ void CalibrateWindow::state_change(int changed)
         vslider2->setValue(0);
     }
     surface_height = floor((surface_width/image->width)*image->height);
-    if (a_frame->isChecked())
+    if ( state == TRM_STATE_FRAME)
     {
         int frames = (int) cvGetCaptureProperty( capture, CV_CAP_PROP_FRAME_COUNT );
         if (frames - 100 < 0)
@@ -120,7 +116,7 @@ void CalibrateWindow::state_change(int changed)
         vslider1->setEnabled(false);
         vslider2->setEnabled(false);
     }
-    else if (a_edge->isChecked())
+    else if (state == TRM_STATE_EDGE)
     {
         if ( chk2->isChecked() )
         {
@@ -176,7 +172,7 @@ void CalibrateWindow::state_change(int changed)
         vslider2->setMaximum(30);
         vslider1->setEnabled(true);
     }
-    else if (a_loop->isChecked())
+    else if (state == TRM_STATE_CORNER)
     {
         imgout = cvCloneImage(image);
         if (chk1->isChecked())
@@ -224,7 +220,7 @@ void CalibrateWindow::state_change(int changed)
         vslider1->setEnabled(true);
         vslider2->setEnabled(false);
     }
-    else if (a_result->isChecked())
+    else if (state == TRM_STATE_RESULT)
     {
         count = 0;
         if (filter_param.edge_1 == filter_param.edge_2 && filter_param.edge_2 == 0 )
@@ -299,11 +295,11 @@ void CalibrateWindow::slider1_change(int value)
     treshold_1 = value;
     if (chk1->isChecked())
     {
-        if (a_edge->isChecked())
+        if (state == TRM_STATE_EDGE)
 		{
         	slider2->setValue(value/3);
         }
-        else if (a_result->isChecked())
+        else if (state == TRM_STATE_RESULT)
 		{
         	;
 		}
@@ -314,11 +310,11 @@ void CalibrateWindow::slider1_change(int value)
     }
     if (chk2->isChecked())
     {
-        if (a_edge->isChecked())
+        if (state == TRM_STATE_EDGE)
 		{
         	;
         }
-        else if (a_result->isChecked())
+        else if (state == TRM_STATE_RESULT)
 		{
             ;
 		}
@@ -357,23 +353,23 @@ void CalibrateWindow::chk1_change()
 {
     if (chk1->isChecked())
     {
-        if (a_edge->isChecked())
+        if (state == TRM_STATE_EDGE)
         {
 			slider2->setValue(slider1->value()/3);
             slider2->setEnabled(!chk1->isChecked());
         }
-        else if (a_loop->isChecked())
+        else if (state == TRM_STATE_CORNER)
         {
             ;
 		}
     }
 	else
 	{
-        if (a_edge->isChecked())
+        if (state == TRM_STATE_EDGE)
         {
             slider2->setEnabled(!chk1->isChecked());
         }
-        else if (a_loop->isChecked())
+        else if (state == TRM_STATE_CORNER)
 		{
             ;
 		}
@@ -385,22 +381,22 @@ void CalibrateWindow::chk2_change()
 {
     if (chk2->isChecked())
     {
-        if (a_edge->isChecked())
+        if (state == TRM_STATE_EDGE)
         {
             ;
         }
-        else if (a_result->isChecked())
+        else if (state == TRM_STATE_RESULT)
 		{
             ;
 		}
 	}
 	else
 	{
-        if (a_edge->isChecked())
+        if (state == TRM_STATE_EDGE)
         {
             ;
         }
-        else if (a_result->isChecked())
+        else if (state == TRM_STATE_RESULT)
 		{
             ;
 		}
@@ -419,18 +415,15 @@ void CalibrateWindow::save_clicked()
 
 void CalibrateWindow::back_clicked()
 {
-    if (a_frame->isChecked())
+    if (state == TRM_STATE_FRAME)
     {
         close();
     }
-    else if (a_edge->isChecked())
+    else if (state == TRM_STATE_EDGE)
     {
-        if (a_frame->isEnabled())
+        if (isVideo)
         {
-            a_edge->setChecked(false);
-            a_loop->setChecked(false);
-            a_result->setChecked(false);
-            a_frame->setChecked(true);
+            state = TRM_STATE_FRAME;
             state_change(1);
             slider1->setValue(filter_param.frame_num);
             slider2->setValue(filter_param.calibre_width);
@@ -442,7 +435,7 @@ void CalibrateWindow::back_clicked()
             close();
         }
     }
-    else if (a_loop->isChecked())
+    else if (state == TRM_STATE_CORNER)
     {
         if (image != NULL)
         {
@@ -450,9 +443,7 @@ void CalibrateWindow::back_clicked()
         }
         image = cvCreateImage( cvGetSize(imagesrc), 8, 1 );
         cvCvtColor( imagesrc, image, CV_BGR2GRAY );
-        a_loop->setChecked(false);
-        a_edge->setChecked(true);
-        a_result->setChecked(false);
+        state = TRM_STATE_EDGE;
         state_change(1);
         chk2->setChecked(true);
         slider1->setValue(filter_param.edge_1);
@@ -462,7 +453,7 @@ void CalibrateWindow::back_clicked()
         option_menu->addAction(a_equal);
         option_menu->removeAction(a_corner);
     }
-    else if (a_result->isChecked())
+    else if (state == TRM_STATE_RESULT)
     {
         if (image != NULL)
         {
@@ -478,9 +469,7 @@ void CalibrateWindow::back_clicked()
         IplImage *buffer = image;
         image = trmMosbat::doCanny( image, filter_param.edge_1 ,filter_param.edge_2, 3 );
         cvReleaseImage( &buffer );
-        a_loop->setChecked(true);
-        a_edge->setChecked(false);
-        a_result->setChecked(false);
+        state = TRM_STATE_CORNER;
 
         option_menu->addAction(a_corner);
         option_menu->setEnabled(true);
@@ -501,17 +490,14 @@ void CalibrateWindow::next_clicked()
         image = imgout;
         imgout = NULL;
     }
-    if (a_frame->isChecked())
+    if (state == TRM_STATE_FRAME)
     {
         filter_param.frame_num = treshold_1;
         if (chk2->isChecked())
         {
             filter_param.calibre_width = treshold_1;
         }
-        a_frame->setChecked(false);
-        a_loop->setChecked(false);
-        a_edge->setChecked(true);
-        a_result->setChecked(false);
+        state = TRM_STATE_EDGE;
         state_change(1);
         chk1->setChecked(true);
         chk2->setChecked(true);
@@ -523,16 +509,13 @@ void CalibrateWindow::next_clicked()
         option_menu->addAction(a_equal);
         option_menu->removeAction(a_width);
     }
-    else if (a_edge->isChecked())
+    else if (state == TRM_STATE_EDGE)
     {
         filter_param.edge_1 = treshold_1;
         filter_param.edge_2 = treshold_2;
         filter_param.erode = treshold_3;
         filter_param.dilute = treshold_4;
-        a_loop->setChecked(true);
-        a_frame->setChecked(false);
-        a_edge->setChecked(false);
-        a_result->setChecked(false);
+        state = TRM_STATE_CORNER;
         state_change(1);
         vslider1->setValue(filter_param.corner_min);
         chk1->setChecked(true);
@@ -542,20 +525,17 @@ void CalibrateWindow::next_clicked()
         option_menu->removeAction(a_width);
         option_menu->addAction(a_corner);
     }
-    else if (a_loop->isChecked())
+    else if (state == TRM_STATE_CORNER)
     {
         filter_param.bold = treshold_1;
         filter_param.corner_min = treshold_3;
-        a_frame->setChecked(false);
-        a_loop->setChecked(false);
-        a_edge->setChecked(false);
-        a_result->setChecked(true);
+        state = TRM_STATE_RESULT;
         state_change(1);
         next_btn->setText("Finish");
         option_menu->removeAction(a_corner);
         option_menu->setEnabled(false);
     }
-    else if (a_result->isChecked())
+    else if (state == TRM_STATE_RESULT)
     {
         /*Creating a json object*/
         // ---- create from scratch ----
@@ -595,11 +575,8 @@ void CalibrateWindow::open_clicked()
         cvCvtColor( imagesrc, image, CV_BGR2GRAY );
         int diff = surface_height - floor((surface_width/image->width)*image->height);
         chk2->setChecked(false);
-        a_frame->setEnabled(true);
-        a_frame->setChecked(true);
-        a_loop->setChecked(false);
-        a_edge->setChecked(false);
-        a_result->setChecked(false);
+
+        state = TRM_STATE_FRAME;
 
         option_menu->addAction(a_width);
 
@@ -621,11 +598,7 @@ void CalibrateWindow::openimage_clicked()
         isVideo = false;
         imagesrc = cvLoadImage(filename.toLocal8Bit().data());
         image = cvLoadImage(filename.toLocal8Bit().data(),CV_LOAD_IMAGE_GRAYSCALE);
-        a_frame->setEnabled(false);
-        a_frame->setChecked(false);
-        a_loop->setChecked(false);
-        a_edge->setChecked(true);
-        a_result->setChecked(false);
+        state = TRM_STATE_EDGE;
         chk1->setChecked(false);
         slider1->setValue(0);
 
@@ -671,27 +644,17 @@ void CalibrateWindow::CreateMenu()
     a_save = file_menu->addAction("Save");
     a_replace = file_menu->addAction("Replace");
 
-    a_frame = new QAction("Select Image",NULL);
-    a_edge = new QAction("Edge Detection",NULL);
-    a_loop = new QAction("Loop Detection",NULL);
-    a_result = new QAction("Result",NULL);
-
     option_menu = menu->addMenu("Option");
     a_equal = new QAction("Erode = Dilute",NULL);
     a_width = new QAction("Set Width",NULL);
     a_corner = new QAction("Show All Corner",NULL);
 
-    a_edge->setCheckable(true);
-    a_loop->setCheckable(true);
-    a_result->setCheckable(true);
     a_equal->setCheckable(true);
-    a_frame->setCheckable(true);
     a_corner->setCheckable(true);
 
-    a_edge->setChecked(true);
+    state = TRM_STATE_EDGE;
     a_equal->setChecked(true);
 
-    a_frame->setEnabled(false);
 
     help_menu = menu->addMenu("Help");
     a_about = help_menu->addAction("About");
