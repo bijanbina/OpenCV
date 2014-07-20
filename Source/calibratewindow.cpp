@@ -33,7 +33,7 @@ CalibrateWindow::CalibrateWindow(QWidget *parent) :
         slider1->setValue(filter_param.edge_1);
         slider2->setValue(filter_param.edge_2);
         vslider1->setValue(filter_param.erode);
-        vslider2->setValue(filter_param.dilute);
+        vslider2->setValue(filter_param.dilate);
 
         option_menu->addAction(a_width);
         option_menu->addAction(a_corner);
@@ -164,7 +164,7 @@ void CalibrateWindow::state_change(int changed)
         }
         surface->setPixmap(QPixmap::fromImage(imageView.scaled(surface_width,surface_height,Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
         chk1->setText("Proportion 3");
-        chk2->setText("Dilute+Erode");
+        chk2->setText("Dilate+Erode");
 		slider1->setMaximum(1000);
         slider2->setMaximum(1000);
         slider2->setMinimum(0);
@@ -234,8 +234,8 @@ void CalibrateWindow::state_change(int changed)
             cvCvtColor( imagesrc, imgclone, CV_BGR2GRAY );
             if (filter_param.erode)
                 cvErode( imgclone, imgclone , NULL , filter_param.erode );
-            if (filter_param.dilute)
-                cvDilate( imgclone, imgclone , NULL , filter_param.dilute );
+            if (filter_param.dilate)
+                cvDilate( imgclone, imgclone , NULL , filter_param.dilate );
             IplImage *buffer = imgclone;
             imgclone = trmMosbat::doCanny( imgclone, filter_param.edge_1 ,filter_param.edge_2, 3 );
             cvReleaseImage( &buffer );
@@ -338,15 +338,22 @@ void CalibrateWindow::slider2_change(int value)
 void CalibrateWindow::slider3_change(int value)
 {
     treshold_3 = value;
-	state_change();
     vslider1_label->setText(QString("value = %1").arg(value));
+    if (state == TRM_STATE_EDGE && a_equal->isEnabled())
+    {
+       vslider2->setValue(value);
+    }
+    else
+    {
+        state_change();
+    }
 }
 
 void CalibrateWindow::slider4_change(int value)
 {
     treshold_4 = value;
-	state_change();
     vslider2_label->setText(QString("value = %1").arg(value));
+    state_change();
 }
 
 void CalibrateWindow::chk1_change()
@@ -449,7 +456,7 @@ void CalibrateWindow::back_clicked()
         slider1->setValue(filter_param.edge_1);
         slider2->setValue(filter_param.edge_2);
         vslider1->setValue(filter_param.erode);
-        vslider2->setValue(filter_param.dilute);
+        vslider2->setValue(filter_param.dilate);
         option_menu->addAction(a_equal);
         option_menu->removeAction(a_corner);
     }
@@ -464,8 +471,8 @@ void CalibrateWindow::back_clicked()
         cvCvtColor( imagesrc, image, CV_BGR2GRAY );
         if (filter_param.erode)
             cvErode( image, image , NULL , filter_param.erode );
-        if (filter_param.dilute)
-            cvDilate( image, image , NULL , filter_param.dilute );
+        if (filter_param.dilate)
+            cvDilate( image, image , NULL , filter_param.dilate );
         IplImage *buffer = image;
         image = trmMosbat::doCanny( image, filter_param.edge_1 ,filter_param.edge_2, 3 );
         cvReleaseImage( &buffer );
@@ -504,7 +511,7 @@ void CalibrateWindow::next_clicked()
         slider1->setValue(filter_param.edge_1);
         slider2->setValue(filter_param.edge_2);
         vslider1->setValue(filter_param.erode);
-        vslider2->setValue(filter_param.dilute);
+        vslider2->setValue(filter_param.dilate);
 
         option_menu->addAction(a_equal);
         option_menu->removeAction(a_width);
@@ -514,7 +521,7 @@ void CalibrateWindow::next_clicked()
         filter_param.edge_1 = treshold_1;
         filter_param.edge_2 = treshold_2;
         filter_param.erode = treshold_3;
-        filter_param.dilute = treshold_4;
+        filter_param.dilate = treshold_4;
         state = TRM_STATE_CORNER;
         state_change(1);
         vslider1->setValue(filter_param.corner_min);
@@ -609,9 +616,9 @@ void CalibrateWindow::openimage_clicked()
         slider1->setValue(filter_param.edge_1);
         slider2->setValue(filter_param.edge_2);
         vslider1->setValue(filter_param.erode);
-        vslider2->setValue(filter_param.dilute);
+        vslider2->setValue(filter_param.dilate);
         chk2->setChecked(true);
-        if ( filter_param.erode == filter_param.dilute && filter_param.dilute == 0 )
+        if ( filter_param.erode == filter_param.dilate && filter_param.dilate == 0 )
         {
             chk2->setChecked(false);
         }
@@ -645,7 +652,7 @@ void CalibrateWindow::CreateMenu()
     a_replace = file_menu->addAction("Replace");
 
     option_menu = menu->addMenu("Option");
-    a_equal = new QAction("Erode = Dilute",NULL);
+    a_equal = new QAction("Erode = Dilate",NULL);
     a_width = new QAction("Set Width",NULL);
     a_corner = new QAction("Show All Corner",NULL);
 
@@ -736,7 +743,7 @@ void CalibrateWindow::CreateLayout(QWidget *parent)
     surface_width = filter_param.calibre_width;
 
 
-    if ( filter_param.erode == filter_param.dilute && filter_param.dilute == 0 )
+    if ( filter_param.erode == filter_param.dilate && filter_param.dilate == 0 )
     {
         chk2->setChecked(false);
     }

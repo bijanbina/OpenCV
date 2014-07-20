@@ -48,9 +48,15 @@ public:
         setGeometry((qApp->desktop()->geometry().center() - rect().center()).x(),(qApp->desktop()->geometry().center() - rect().center()).y(),rect().width(),rect().height());
     }
 
+
 protected:
     char        *FileOpName; //declare FileOpName as IplImage
     IplImage    *imagerd;    //declare imagerd as IplImage
+
+    void closeEvent(QCloseEvent *event)
+    {
+        trmMosbat::Saveparam(filter_param,"settings.json");
+    }
 
 private slots:
     void open_clicked();

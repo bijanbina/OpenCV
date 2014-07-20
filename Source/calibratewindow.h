@@ -68,6 +68,8 @@ private:
     QAction		 *a_equal;
     QAction		 *a_width;
     QAction		 *a_corner;
+    QAction		 *a_hough;
+    QAction		 *a_feature;
     IplImage     *image;
     IplImage     *imgout;
     IplImage     *imagesrc; 

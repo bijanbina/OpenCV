@@ -341,7 +341,7 @@ trmParam trmMosbat::Loadparam(char *filename)
         {
             return_data.bold = json_obj.get("Bold",1).asInt();
             return_data.erode = json_obj.get("Erode",1).asInt();
-            return_data.dilute = json_obj.get("Dilate",1).asInt();
+            return_data.dilate = json_obj.get("Dilate",1).asInt();
             return_data.calibre_width = json_obj.get("Calibre Image Width",calib_prev_size).asInt();
             return_data.frame_num = json_obj.get("Start Frame Number",0).asInt();
             return_data.isVideo = json_obj.get("Is Video",false).asBool();
@@ -365,7 +365,7 @@ trmParam trmMosbat::Loadparam(char *filename)
     {
         return_data.bold = 1;
         return_data.erode = 12;
-        return_data.dilute = 12;
+        return_data.dilate = 12;
         return_data.edge_1 = 383;
         return_data.edge_2 = 127;
         return_data.corner_min = 11;
@@ -384,7 +384,7 @@ void trmMosbat::Saveparam(trmParam data,char *filename)
     edge["Treshold 1"] = data.edge_1;
     edge["Treshold 2"] = data.edge_2;
     json_main["Erode"] = data.erode;
-    json_main["Dilate"] = data.dilute;
+    json_main["Dilate"] = data.dilate;
     json_main["Bold"] = data.bold;
     json_main["Corner Minimum Distance"] = data.corner_min;
     json_main["File Address"] = data.filename.toUtf8().data();
@@ -411,8 +411,8 @@ trmMosbat *mosbatFromImage(IplImage *imagesrc,trmParam filterParam)
     cvCvtColor( imagesrc, imgclone, CV_BGR2GRAY );
     if (filterParam.erode)
         cvErode( imgclone, imgclone , NULL , filterParam.erode );
-    if (filterParam.dilute)
-        cvDilate( imgclone, imgclone , NULL , filterParam.dilute );
+    if (filterParam.dilate)
+        cvDilate( imgclone, imgclone , NULL , filterParam.dilate );
     IplImage *buffer = imgclone;
     imgclone = trmMosbat::doCanny( imgclone, filterParam.edge_1 ,filterParam.edge_2, 3 );
     cvReleaseImage( &buffer );
@@ -425,7 +425,7 @@ trmMosbat *mosbatFromImage(IplImage *imagesrc,trmParam filterParam)
     CvMemStorage* poly_storage = cvCreateMemStorage();
     CvSeq *dummy_seq = firstContour;
     CvSeq *poly = NULL;
-    trmMosbat *plus_mark;
+    trmMosbat *plus_mark = NULL;
     IplImage *imgout = cvCloneImage(imagesrc);
     while( dummy_seq != NULL )
     {

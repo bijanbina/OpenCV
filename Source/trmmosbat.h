@@ -10,14 +10,14 @@
 #include <string.h>
 
 #define PI 3.14159265
-#define calib_prev_size 1000.0
+#define calib_prev_size 800.0
 
 struct trm_param
 {
     double edge_1;
     double edge_2;
     int erode;
-    int dilute;
+    int dilate;
     int bold;
     int corner_min;
     int frame_num;
