@@ -20,8 +20,12 @@ CalibrateWindow::CalibrateWindow(QWidget *parent) :
     connect(a_open_image, SIGNAL(triggered(bool)),this,SLOT(openimage_clicked()));
     connect(a_save, SIGNAL(triggered(bool)),this,SLOT(save_clicked()));
     connect(a_replace, SIGNAL(triggered(bool)),this,SLOT(replace_clicked()));
-    connect(a_corner, SIGNAL(triggered(bool)),this,SLOT(state_change()));
+    connect(a_loop, SIGNAL(triggered(bool)),this,SLOT(state_change()));
     connect(a_width, SIGNAL(triggered(bool)),this,SLOT(width_clicked()));
+    connect(a_equal, SIGNAL(triggered(bool)),this,SLOT(equal_clicked(bool)));
+    connect(a_feature, SIGNAL(triggered(bool)),this,SLOT(feature_clicked(bool)));
+    connect(a_corner, SIGNAL(triggered(bool)),this,SLOT(corner_clicked(bool)));
+    connect(a_hough, SIGNAL(triggered(bool)),this,SLOT(hough_clicked(bool)));
 
     filename = filter_param.filename;
     isVideo = filter_param.isVideo;
@@ -36,7 +40,7 @@ CalibrateWindow::CalibrateWindow(QWidget *parent) :
         vslider2->setValue(filter_param.dilate);
 
         option_menu->addAction(a_width);
-        option_menu->addAction(a_corner);
+        option_menu->addAction(a_loop);
 
         state_change();
     }
@@ -60,6 +64,8 @@ CalibrateWindow::CalibrateWindow(QWidget *parent) :
         slider1->setValue(filter_param.frame_num);
         slider2->setValue(filter_param.calibre_width);
     }
+
+    setGeometry((qApp->desktop()->geometry().center() - rect().center()).x(),(qApp->desktop()->geometry().center() - rect().center()).y(),rect().width(),rect().height());
 }
 
 CalibrateWindow::~CalibrateWindow()
@@ -195,7 +201,7 @@ void CalibrateWindow::state_change(int changed)
         while( dummy_seq != NULL )
         {
             poly = cvApproxPoly(dummy_seq,sizeof(CvContour),poly_storage, CV_POLY_APPROX_DP,treshold_3);
-            if (poly->total == 12 || a_corner->isChecked())
+            if (poly->total == 12 || a_loop->isChecked())
             {
                 for(i = 0; i < poly->total; i++)
                 {
@@ -411,6 +417,60 @@ void CalibrateWindow::chk2_change()
     state_change();
 }
 
+void CalibrateWindow::equal_clicked(bool state)
+{
+    if (state)
+    {
+        state_change(0);
+    }
+    else
+    {
+        state_change(0);
+    }
+}
+
+void CalibrateWindow::feature_clicked(bool state)
+{
+    if (state)
+    {
+        a_corner->setChecked(false);
+        a_hough->setChecked(false);
+        state_change(1);
+    }
+    else
+    {
+        a_feature->setChecked(true);
+    }
+}
+
+void CalibrateWindow::corner_clicked(bool state)
+{
+    if (state)
+    {
+        a_feature->setChecked(false);
+        a_hough->setChecked(false);
+        state_change(1);
+    }
+    else
+    {
+        a_corner->setChecked(true);
+    }
+}
+
+void CalibrateWindow::hough_clicked(bool state)
+{
+    if (state)
+    {
+        a_feature->setChecked(false);
+        a_corner->setChecked(false);
+        state_change(1);
+    }
+    else
+    {
+        a_hough->setChecked(true);
+    }
+}
+
 void CalibrateWindow::save_clicked()
 {
     filename = QFileDialog::getSaveFileName(this, "Save File", "","");
@@ -458,7 +518,8 @@ void CalibrateWindow::back_clicked()
         vslider1->setValue(filter_param.erode);
         vslider2->setValue(filter_param.dilate);
         option_menu->addAction(a_equal);
-        option_menu->removeAction(a_corner);
+        option_menu->removeAction(a_loop);
+        algorithm_menu->setEnabled(false);
     }
     else if (state == TRM_STATE_RESULT)
     {
@@ -478,13 +539,14 @@ void CalibrateWindow::back_clicked()
         cvReleaseImage( &buffer );
         state = TRM_STATE_CORNER;
 
-        option_menu->addAction(a_corner);
+        option_menu->addAction(a_loop);
         option_menu->setEnabled(true);
 
         state_change(1);
         slider1->setValue(filter_param.bold);
         vslider1->setValue(filter_param.corner_min);
         chk1->setChecked(true);
+        algorithm_menu->setEnabled(true);
         next_btn->setText("Next");
     }
 }
@@ -526,11 +588,12 @@ void CalibrateWindow::next_clicked()
         state_change(1);
         vslider1->setValue(filter_param.corner_min);
         chk1->setChecked(true);
+        algorithm_menu->setEnabled(true);
         slider1->setValue(filter_param.bold);
 
         option_menu->removeAction(a_equal);
         option_menu->removeAction(a_width);
-        option_menu->addAction(a_corner);
+        option_menu->addAction(a_loop);
     }
     else if (state == TRM_STATE_CORNER)
     {
@@ -539,16 +602,13 @@ void CalibrateWindow::next_clicked()
         state = TRM_STATE_RESULT;
         state_change(1);
         next_btn->setText("Finish");
-        option_menu->removeAction(a_corner);
+        option_menu->removeAction(a_loop);
         option_menu->setEnabled(false);
+        algorithm_menu->setEnabled(false);
     }
     else if (state == TRM_STATE_RESULT)
     {
-        /*Creating a json object*/
-        // ---- create from scratch ----
-
         trmMosbat::Saveparam(filter_param,"settings.json");
-
         close();
      }
 
@@ -651,17 +711,27 @@ void CalibrateWindow::CreateMenu()
     a_save = file_menu->addAction("Save");
     a_replace = file_menu->addAction("Replace");
 
+    algorithm_menu = menu->addMenu("Algorithm");
+    a_feature = algorithm_menu->addAction("Feature Detection");
+    a_hough = algorithm_menu->addAction("Hough Transform");
+    a_corner = algorithm_menu->addAction("Corner Detection");
+
     option_menu = menu->addMenu("Option");
     a_equal = new QAction("Erode = Dilate",NULL);
     a_width = new QAction("Set Width",NULL);
-    a_corner = new QAction("Show All Corner",NULL);
+    a_loop = new QAction("Show All Corner",NULL);
+
 
     a_equal->setCheckable(true);
+    a_loop->setCheckable(true);
+    a_feature->setCheckable(true);
+    a_hough->setCheckable(true);
     a_corner->setCheckable(true);
 
     state = TRM_STATE_EDGE;
     a_equal->setChecked(true);
-
+    a_feature->setChecked(true);
+    algorithm_menu->setEnabled(false);
 
     help_menu = menu->addMenu("Help");
     a_about = help_menu->addAction("About");

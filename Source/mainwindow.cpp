@@ -93,7 +93,7 @@ void MainWindow::analysis_clicked()
         xy_curve->setRenderHint( QwtPlotItem::RenderAntialiased, true );
 
         QwtSymbol *symbol = new QwtSymbol( QwtSymbol::Ellipse,
-            QBrush( Qt::yellow ), QPen( Qt::red, 2 ), QSize( 8, 8 ) );
+        QBrush( Qt::yellow ), QPen( Qt::red, 2 ), QSize( 8, 8 ) );
         xy_curve->setSymbol( symbol );
         xy_curve->setSamples(X,Y);
         xy_curve->attach(xy_plot);
@@ -255,6 +255,7 @@ void MainWindow::CreateLayout()
     surface2_layout->addLayout(option_layout);
 
 	progress = new QProgressBar;
+    progress->setValue(0);
 	progress_layout->addWidget(progress);
 
 	//Plot
@@ -404,8 +405,7 @@ trmData *createTrmdata(CvCapture *capture,trmParam param,int startFrame,int endF
         }
         else
         {
-            CalibrateWindow *calibrate_window = new CalibrateWindow();
-            calibrate_window->start(frameNumber);
+            std::cout << "Erorr: frame number: " << frameNumber << std::endl;
         }
         frameNumber++;
         progress->setValue(frameNumber - startFrame);

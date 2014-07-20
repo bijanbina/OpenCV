@@ -19,14 +19,13 @@ public:
     ~CalibrateWindow();
     trmParam start(int startFrame = 0);
 
+protected:
+    char        *FileOpName; //declare FileOpName as IplImage
 
     void resizeEvent ( QResizeEvent * event )
     {
         setGeometry((qApp->desktop()->geometry().center() - rect().center()).x(),(qApp->desktop()->geometry().center() - rect().center()).y(),rect().width(),rect().height());
     }
-
-protected:
-    char        *FileOpName; //declare FileOpName as IplImage
 
 private slots:
     void slider1_change(int);
@@ -43,6 +42,10 @@ private slots:
     void state_change(int changed = 0);
     void next_clicked();
     void width_clicked();
+    void equal_clicked(bool state);
+    void feature_clicked(bool state);
+    void corner_clicked(bool state);
+    void hough_clicked(bool state);
 
 
 private:
@@ -58,6 +61,7 @@ private:
 	QCheckBox    *chk2;
     QMenuBar     *menu;
     QMenu        *file_menu;
+    QMenu		 *algorithm_menu;
     QMenu		 *option_menu;
     QMenu		 *help_menu;
     QAction		 *a_save;
@@ -67,9 +71,10 @@ private:
     QAction		 *a_about;
     QAction		 *a_equal;
     QAction		 *a_width;
-    QAction		 *a_corner;
+    QAction		 *a_loop;
     QAction		 *a_hough;
     QAction		 *a_feature;
+    QAction		 *a_corner;
     IplImage     *image;
     IplImage     *imgout;
     IplImage     *imagesrc; 
