@@ -14,7 +14,7 @@ trmMosbat *create_from_point(CvSeq *points,double previous)
     obj->center3.y = 9999;
     obj->center4.x = 9999;
     obj->center4.y = 9999;
-
+	
     //find centers
     for( int i=0; i < points->total; i++ )
     {

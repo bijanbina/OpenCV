@@ -8,7 +8,6 @@
 #include <trmmosbat.h>
 
 
-
 class CalibrateWindow : public QDialog {
     Q_OBJECT
 public:
@@ -38,12 +37,7 @@ private slots:
     void replace_clicked();
     void back_clicked();
     void state_change(int changed = 0);
-    void result_clicked(bool);
-    void edgedetect_clicked(bool);
-    void loop_clicked(bool);
-    void equal_clicked(bool);
     void next_clicked();
-    void frame_clicked(bool);
     void width_clicked();
 
 
@@ -60,19 +54,18 @@ private:
 	QCheckBox    *chk2;
     QMenuBar     *menu;
     QMenu        *file_menu;
-    QMenu		 *mode_menu;
     QMenu		 *option_menu;
     QMenu		 *help_menu;
     QAction		 *a_save;
     QAction		 *a_open;
     QAction		 *a_open_image;
     QAction		 *a_replace;
+    QAction		 *a_frame;
     QAction		 *a_edge;
-    QAction		 *a_result;
     QAction		 *a_loop;
+    QAction		 *a_result;
     QAction		 *a_about;
     QAction		 *a_equal;
-    QAction		 *a_frame;
     QAction		 *a_width;
     QAction		 *a_corner;
     IplImage     *image;

@@ -4,7 +4,7 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent)
 {
     CreateLayout();
-	
+		
 	//Actions
     connect(a_open, SIGNAL(triggered(bool)),this,SLOT(open_clicked()));
     connect(a_save, SIGNAL(triggered(bool)),this,SLOT(save_clicked()));

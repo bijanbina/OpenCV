@@ -32,7 +32,7 @@ class trmMosbat
 {
 public:
     trmMosbat();
-    double findAngle();
+	double findAngle();
     double findDerivative(CvPoint pt1, CvPoint pt2, CvPoint pt3, CvPoint pt4, bool reverse = false);
     CvPoint *getRect(); //return rectangle which contain plus
     CvRect   getRegion(); //return rectangle which contain plus

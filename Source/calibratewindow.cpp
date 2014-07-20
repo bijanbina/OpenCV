@@ -19,11 +19,6 @@ CalibrateWindow::CalibrateWindow(QWidget *parent) :
     connect(a_open, SIGNAL(triggered(bool)),this,SLOT(open_clicked()));
     connect(a_open_image, SIGNAL(triggered(bool)),this,SLOT(openimage_clicked()));
     connect(a_save, SIGNAL(triggered(bool)),this,SLOT(save_clicked()));
-    connect(a_result, SIGNAL(triggered(bool)),this,SLOT(result_clicked(bool)));
-    connect(a_edge, SIGNAL(triggered(bool)),this,SLOT(edgedetect_clicked(bool)));
-    connect(a_loop, SIGNAL(triggered(bool)),this,SLOT(loop_clicked(bool)));
-    connect(a_equal, SIGNAL(triggered(bool)),this,SLOT(equal_clicked(bool)));
-    connect(a_frame, SIGNAL(triggered(bool)),this,SLOT(frame_clicked(bool)));
     connect(a_replace, SIGNAL(triggered(bool)),this,SLOT(replace_clicked()));
     connect(a_corner, SIGNAL(triggered(bool)),this,SLOT(state_change()));
     connect(a_width, SIGNAL(triggered(bool)),this,SLOT(width_clicked()));
@@ -39,6 +34,10 @@ CalibrateWindow::CalibrateWindow(QWidget *parent) :
         slider2->setValue(filter_param.edge_2);
         vslider1->setValue(filter_param.erode);
         vslider2->setValue(filter_param.dilute);
+
+        option_menu->addAction(a_width);
+        option_menu->addAction(a_corner);
+
         state_change();
     }
     else
@@ -55,6 +54,9 @@ CalibrateWindow::CalibrateWindow(QWidget *parent) :
         a_loop->setChecked(false);
         a_edge->setChecked(false);
         a_result->setChecked(false);
+
+        option_menu->addAction(a_width);
+
         vslider1->setValue(0);
         chk1->setChecked(false);
         slider1->setValue(0);
@@ -432,6 +434,8 @@ void CalibrateWindow::back_clicked()
             state_change(1);
             slider1->setValue(filter_param.frame_num);
             slider2->setValue(filter_param.calibre_width);
+            option_menu->removeAction(a_equal);
+            option_menu->addAction(a_width);
         }
         else
         {
@@ -455,6 +459,8 @@ void CalibrateWindow::back_clicked()
         slider2->setValue(filter_param.edge_2);
         vslider1->setValue(filter_param.erode);
         vslider2->setValue(filter_param.dilute);
+        option_menu->addAction(a_equal);
+        option_menu->removeAction(a_corner);
     }
     else if (a_result->isChecked())
     {
@@ -475,6 +481,10 @@ void CalibrateWindow::back_clicked()
         a_loop->setChecked(true);
         a_edge->setChecked(false);
         a_result->setChecked(false);
+
+        option_menu->addAction(a_corner);
+        option_menu->setEnabled(true);
+
         state_change(1);
         slider1->setValue(filter_param.bold);
         vslider1->setValue(filter_param.corner_min);
@@ -509,6 +519,9 @@ void CalibrateWindow::next_clicked()
         slider2->setValue(filter_param.edge_2);
         vslider1->setValue(filter_param.erode);
         vslider2->setValue(filter_param.dilute);
+
+        option_menu->addAction(a_equal);
+        option_menu->removeAction(a_width);
     }
     else if (a_edge->isChecked())
     {
@@ -524,6 +537,10 @@ void CalibrateWindow::next_clicked()
         vslider1->setValue(filter_param.corner_min);
         chk1->setChecked(true);
         slider1->setValue(filter_param.bold);
+
+        option_menu->removeAction(a_equal);
+        option_menu->removeAction(a_width);
+        option_menu->addAction(a_corner);
     }
     else if (a_loop->isChecked())
     {
@@ -535,6 +552,8 @@ void CalibrateWindow::next_clicked()
         a_result->setChecked(true);
         state_change(1);
         next_btn->setText("Finish");
+        option_menu->removeAction(a_corner);
+        option_menu->setEnabled(false);
     }
     else if (a_result->isChecked())
     {
@@ -581,6 +600,9 @@ void CalibrateWindow::open_clicked()
         a_loop->setChecked(false);
         a_edge->setChecked(false);
         a_result->setChecked(false);
+
+        option_menu->addAction(a_width);
+
         vslider1->setValue(0);
         chk1->setChecked(false);
         slider1->setValue(0);
@@ -606,6 +628,9 @@ void CalibrateWindow::openimage_clicked()
         a_result->setChecked(false);
         chk1->setChecked(false);
         slider1->setValue(0);
+
+        option_menu->addAction(a_equal);
+
         int diff = surface_height - floor((surface_width/image->width)*image->height);
         state_change(1);
         slider1->setValue(filter_param.edge_1);
@@ -634,79 +659,6 @@ void CalibrateWindow::width_clicked()
     resize(minimumSize());
 }
 
-void CalibrateWindow::frame_clicked(bool state)
-{
-    if (state)
-    {
-        a_edge->setChecked(false);
-        a_loop->setChecked(false);
-        a_result->setChecked(false);
-        state_change(1);
-    }
-    else
-    {
-        a_frame->setChecked(true);
-    }
-}
-
-void CalibrateWindow::result_clicked(bool state)
-{
-    if (state)
-    {
-        a_edge->setChecked(false);
-        a_loop->setChecked(false);
-        a_frame->setChecked(false);
-        state_change(1);
-    }
-    else
-    {
-        a_result->setChecked(true);
-    }
-}
-
-void CalibrateWindow::edgedetect_clicked(bool state)
-{
-    if (state)
-    {
-        a_result->setChecked(false);
-        a_loop->setChecked(false);
-        a_frame->setChecked(false);
-        state_change(1);
-    }
-    else
-    {
-        a_edge->setChecked(true);
-    }
-}
-
-void CalibrateWindow::equal_clicked(bool state)
-{
-    if (state)
-    {
-        state_change(0);
-    }
-    else
-    {
-        state_change(0);
-    }
-}
-
-void CalibrateWindow::loop_clicked(bool state)
-{
-    if (state)
-    {
-        a_edge->setChecked(false);
-        a_result->setChecked(false);
-        a_frame->setChecked(false);
-        state_change(1);
-        vslider1->setValue(9);
-    }
-    else
-    {
-        a_loop->setChecked(true);
-    }
-}
-
 void CalibrateWindow::CreateMenu()
 {
     menu = new QMenuBar (this);
@@ -719,16 +671,15 @@ void CalibrateWindow::CreateMenu()
     a_save = file_menu->addAction("Save");
     a_replace = file_menu->addAction("Replace");
 
-    mode_menu = menu->addMenu("Mode");
-    a_frame = mode_menu->addAction("Select Image");
-    a_edge = mode_menu->addAction("Edge Detection");
-    a_loop = mode_menu->addAction("Loop Detection");
-    a_result = mode_menu->addAction("Result");
+    a_frame = new QAction("Select Image",NULL);
+    a_edge = new QAction("Edge Detection",NULL);
+    a_loop = new QAction("Loop Detection",NULL);
+    a_result = new QAction("Result",NULL);
 
     option_menu = menu->addMenu("Option");
-    a_equal = option_menu->addAction("Erode = Dilute");
-    a_width = option_menu->addAction("Set image width");
-    a_corner = option_menu->addAction("Show all corner");
+    a_equal = new QAction("Erode = Dilute",NULL);
+    a_width = new QAction("Set Width",NULL);
+    a_corner = new QAction("Show All Corner",NULL);
 
     a_edge->setCheckable(true);
     a_loop->setCheckable(true);
