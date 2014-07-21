@@ -345,6 +345,7 @@ trmParam trmMosbat::Loadparam(char *filename)
             return_data.narrow = json_obj.get("Narrow",1).asInt();
             return_data.edge_corner = json_obj.get("Edge Corner Detection",1).asInt();
             return_data.calibre_width = json_obj.get("Calibre Image Width",calib_prev_size).asInt();
+            return_data.morph_algorithm = json_obj.get("Morphology Algorithm",MORPH_STATE_NORMALL).asInt();
             return_data.frame_num = json_obj.get("Start Frame Number",0).asInt();
             return_data.isVideo = json_obj.get("Is Video",false).asBool();
             std::string buffer = json_obj.get("File Address","../Resources/Test.jpg").asString();
@@ -399,6 +400,7 @@ void trmMosbat::Saveparam(trmParam data,char *filename)
     json_main["Edge Detection"] = edge;
     json_main["Is Video"] = data.isVideo;
     json_main["Calibre Image Width"] = data.calibre_width;
+    json_main["Morphology Algorithm"] = data.morph_algorithm;
 
     // write in a nice readible way
     Json::StyledWriter styledWriter;

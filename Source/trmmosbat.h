@@ -13,6 +13,11 @@
 #define PI 3.14159265
 #define calib_prev_size 800.0
 
+#define MORPH_STATE_NORMALL     0
+#define MORPH_STATE_REVERSED    1
+#define MORPH_STATE_OPEN        2
+#define MORPH_STATE_CLOSE       3
+
 struct trm_param
 {
     double edge_1;
@@ -26,6 +31,7 @@ struct trm_param
     int frame_num;
     bool isVideo;
     int calibre_width;
+    int morph_algorithm;
     QString filename;
 };
 

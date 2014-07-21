@@ -26,6 +26,7 @@ CalibrateWindow::CalibrateWindow(QWidget *parent) :
     connect(a_mclose, SIGNAL(triggered(bool)),this,SLOT(mclose_clicked(bool)));
     connect(a_mreversed, SIGNAL(triggered(bool)),this,SLOT(mreversed_clicked(bool)));
     connect(a_mopen, SIGNAL(triggered(bool)),this,SLOT(mopen_clicked(bool)));
+    connect(a_mnormal, SIGNAL(triggered(bool)),this,SLOT(mnormal_clicked(bool)));
 
     filename = filter_param.filename;
     isVideo = filter_param.isVideo;
@@ -125,6 +126,7 @@ void CalibrateWindow::state_change(int changed)
     {
         if ( treshold_3 != 0 || treshold_4 != 0 )
         {
+            IplConvKernel *convKernel = cvCreateStructuringElementEx(3, 3, 1, 1, CV_SHAPE_RECT, NULL);
             if (a_equal->isChecked())
             {
                 treshold_4 = treshold_3;
@@ -143,11 +145,24 @@ void CalibrateWindow::state_change(int changed)
             }
             else if (morphology_state == MORPH_STATE_REVERSED)
             {
+                cvDilate( image, imgout , NULL , treshold_4 );
+                cvErode( imgout, imgout , NULL , treshold_3 );
+            }
+            else if (morphology_state == MORPH_STATE_OPEN)
+            {
+                int kernel_size = treshold_3 * 2 + 1;
+                IplConvKernel *convKernel = cvCreateStructuringElementEx(kernel_size, kernel_size, treshold_3, treshold_3, CV_SHAPE_RECT, NULL);
+                imgout = cvCloneImage(image);
+                cvMorphologyEx(imgout, imgout, NULL, convKernel, CV_MOP_OPEN);
+            }
+            else if (morphology_state == MORPH_STATE_CLOSE)
+            {
                 cvDilate( imgout, imgout , NULL , treshold_4 );
                 cvErode( image, imgout , NULL , treshold_3 );
             }
             imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
             surface->setPixmap(QPixmap::fromImage(imageView.scaled(surface_width,surface_height,Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
+            cvReleaseStructuringElement(&convKernel);
         }
         if (treshold_1 == 0 && treshold_2 == 0 )
         {
@@ -373,7 +388,7 @@ void CalibrateWindow::slider3_change(int value)
 {
     treshold_3 = value;
     vslider1_label->setText(QString("value = %1").arg(value));
-    if (calibrate_state == TRM_STATE_EDGE && a_equal->isEnabled())
+    if (calibrate_state == TRM_STATE_EDGE && a_equal->isChecked())
     {
        vslider2->setValue(value);
     }
@@ -539,6 +554,7 @@ void CalibrateWindow::back_clicked()
         slider2->setValue(filter_param.edge_2);
         vslider1->setValue(filter_param.erode);
         vslider2->setValue(filter_param.dilate);
+        morphology_state = filter_param.morph_algorithm;
         option_menu->addAction(a_equal);
         option_menu->removeAction(a_loop);
         morphology_menu->setEnabled(true);
@@ -597,6 +613,7 @@ void CalibrateWindow::next_clicked()
         slider2->setValue(filter_param.edge_2);
         vslider1->setValue(filter_param.erode);
         vslider2->setValue(filter_param.dilate);
+        morphology_state = filter_param.morph_algorithm;
 
         option_menu->addAction(a_equal);
         option_menu->removeAction(a_width);
@@ -608,6 +625,7 @@ void CalibrateWindow::next_clicked()
         filter_param.edge_2 = treshold_2;
         filter_param.erode = treshold_3;
         filter_param.dilate = treshold_4;
+        filter_param.morph_algorithm = morphology_state;
         treshold_1 = 0;
         treshold_2 = 0;
         calibrate_state = TRM_STATE_CORNER;

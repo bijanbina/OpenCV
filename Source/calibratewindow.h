@@ -12,11 +12,6 @@
 #define TRM_STATE_CORNER    2
 #define TRM_STATE_RESULT    3
 
-#define MORPH_STATE_NORMALL     0
-#define MORPH_STATE_REVERSED    1
-#define MORPH_STATE_OPEN        2
-#define MORPH_STATE_CLOSE       3
-
 class CalibrateWindow : public QDialog {
     Q_OBJECT
 public:
