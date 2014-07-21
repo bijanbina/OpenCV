@@ -53,7 +53,7 @@ CalibrateWindow::CalibrateWindow(QWidget *parent) :
         image = cvCreateImage( cvGetSize(imagesrc), 8, 1 );
         cvCvtColor( imagesrc, image, CV_BGR2GRAY );
         chk2->setChecked(false);
-        state = TRM_STATE_FRAME;
+        calibrate_state = TRM_STATE_FRAME;
 
         option_menu->addAction(a_width);
 
@@ -87,7 +87,6 @@ void CalibrateWindow::state_change(int changed)
 		chk1->setChecked(false);
 		chk2->setChecked(false);
         treshold_1 = 0;
-        treshold_2 = 0;
         treshold_3 = 0;
         slider1->setEnabled(true);
         slider2->setEnabled(true);
@@ -97,7 +96,7 @@ void CalibrateWindow::state_change(int changed)
         vslider2->setValue(0);
     }
     surface_height = floor((surface_width/image->width)*image->height);
-    if ( state == TRM_STATE_FRAME)
+    if ( calibrate_state == TRM_STATE_FRAME)
     {
         int frames = (int) cvGetCaptureProperty( capture, CV_CAP_PROP_FRAME_COUNT );
         if (frames - 100 < 0)
@@ -122,7 +121,7 @@ void CalibrateWindow::state_change(int changed)
         vslider1->setEnabled(false);
         vslider2->setEnabled(false);
     }
-    else if (state == TRM_STATE_EDGE)
+    else if (calibrate_state == TRM_STATE_EDGE)
     {
         if ( chk2->isChecked() )
         {
@@ -157,10 +156,8 @@ void CalibrateWindow::state_change(int changed)
         {
             if ( chk2->isChecked() )
             {
-                IplImage* buffer = imgout;
                 imgout = trmMosbat::doCanny( imgout, treshold_1 ,treshold_2, 3 );
                 imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
-                cvReleaseImage( &buffer );
             }
             else
             {
@@ -178,39 +175,89 @@ void CalibrateWindow::state_change(int changed)
         vslider2->setMaximum(30);
         vslider1->setEnabled(true);
     }
-    else if (state == TRM_STATE_CORNER)
+    else if (calibrate_state == TRM_STATE_CORNER)
     {
         imgout = cvCloneImage(image);
-        if (chk1->isChecked())
+        if (treshold_1 != 0 && treshold_1 < 15)
         {
             trmMosbat::bold_filter(imgout,treshold_1);
         }
-        IplImage *imgclone = cvCloneImage(imgout);
-        CvSeq* firstContour = NULL;
-        CvMemStorage* cnt_storage = cvCreateMemStorage();
-        cvFindContours(imgclone,cnt_storage,&firstContour,sizeof(CvContour),CV_RETR_TREE,CV_CHAIN_APPROX_SIMPLE);
-        CvMemStorage* poly_storage = cvCreateMemStorage();
-        if (chk2->isChecked())
+        if (treshold_2 != 0 && treshold_2 < 15)
         {
-            cvZero( imgout );
+            trmMosbat::narrowFilter(imgout,treshold_2);
         }
-        CvSeq *dummy_seq = firstContour;
-        CvSeq *poly = NULL;
-
-        int i = 0;
-        while( dummy_seq != NULL )
+        if (treshold_4 != 0 && treshold_4 < 15)
         {
-            poly = cvApproxPoly(dummy_seq,sizeof(CvContour),poly_storage, CV_POLY_APPROX_DP,treshold_3);
-            if (poly->total == 12 || a_loop->isChecked())
+            imgout = trmMosbat::doCanny( imgout, treshold_4 ,treshold_4 *3, 3 );
+        }
+        if (a_feature->isChecked())
+        {
+            IplImage *imgclone = cvCloneImage(imgout);
+            CvSeq* firstContour = NULL;
+            CvMemStorage* cnt_storage = cvCreateMemStorage();
+            CvMemStorage* poly_storage = cvCreateMemStorage();
+            cvFindContours(imgclone,cnt_storage,&firstContour,sizeof(CvContour),CV_RETR_TREE,CV_CHAIN_APPROX_SIMPLE);
+            cvReleaseImage( &imgclone );
+            if (chk2->isChecked())
             {
-                for(i = 0; i < poly->total; i++)
-                {
-                    CvPoint *temp_point = (CvPoint*)cvGetSeqElem(poly,i);
-                    cv::Mat mat_temp = imgout;
-                    cv::circle( mat_temp, *temp_point, 10.0, 255, 3, 1 );
-                }
+                cvZero( imgout );
             }
-            dummy_seq = dummy_seq->h_next;
+            CvSeq *dummy_seq = firstContour;
+            CvSeq *poly = NULL;
+
+            int i = 0;
+            cv::Mat matout = imgout;
+            while( dummy_seq != NULL )
+            {
+                poly = cvApproxPoly(dummy_seq,sizeof(CvContour),poly_storage, CV_POLY_APPROX_DP,treshold_3);
+                if (poly->total == 12 || a_loop->isChecked())
+                {
+                    for(i = 0; i < poly->total; i++)
+                    {
+                        CvPoint *temp_point = (CvPoint*)cvGetSeqElem(poly,i);
+                        cv::circle( matout, *temp_point, 10.0, 255, 3, 1 );
+                    }
+                }
+                dummy_seq = dummy_seq->h_next;
+            }
+            cvClearMemStorage(poly_storage);
+            cvReleaseMemStorage(&poly_storage);
+            cvClearMemStorage(cnt_storage);
+            cvReleaseMemStorage(&cnt_storage);
+            slider2->setEnabled(false);
+            vslider2->setEnabled(false);
+        }
+        else if (a_hough->isChecked() )
+        {
+            CvSeq* firstContour = NULL;
+            CvMemStorage* hough_storage = cvCreateMemStorage();
+            CvMemStorage* poly_storage = cvCreateMemStorage();
+            firstContour = cvHoughLines2(imgout,hough_storage,CV_HOUGH_STANDARD,1,CV_PI/180,treshold_2);
+            if (chk2->isChecked())
+            {
+                cvZero( imgout );
+            }
+            CvSeq *dummy_seq = firstContour;
+
+            int i = 0;
+            cv::Mat matout = imgout;
+            for(i = 0; i < dummy_seq->total; i++)
+            {
+                float *lines = (float *)cvGetSeqElem(dummy_seq,i);
+                float rho = lines[0], theta = lines[1];
+                CvPoint pt1, pt2;
+                double a = cos(theta), b = sin(theta);
+                double x0 = a*rho, y0 = b*rho;
+                pt1.x = cvRound(x0 + 1000*(-b));
+                pt1.y = cvRound(y0 + 1000*(a));
+                pt2.x = cvRound(x0 - 1000*(-b));
+                pt2.y = cvRound(y0 - 1000*(a));
+                cv::line( matout, pt1, pt2, cvScalar(255,255,255), 3, CV_AA);
+            }
+            cvClearMemStorage(poly_storage);
+            cvReleaseMemStorage(&poly_storage);
+            cvClearMemStorage(hough_storage);
+            cvReleaseMemStorage(&hough_storage);
         }
 
         imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
@@ -218,15 +265,15 @@ void CalibrateWindow::state_change(int changed)
         chk1->setText("Bold Filter");
         chk2->setText("Zero Input");
         slider1->setMaximum(20);
-        slider2->setMaximum(5);
+        slider2->setMaximum(20);
         vslider1->setMaximum(100);
         vslider2->setMaximum(50);
         slider1->setEnabled(chk1->isChecked());
-        slider2->setEnabled(false);
         vslider1->setEnabled(true);
-        vslider2->setEnabled(false);
+        slider2->setEnabled(true);
+        vslider2->setEnabled(true);
     }
-    else if (state == TRM_STATE_RESULT)
+    else if (calibrate_state == TRM_STATE_RESULT)
     {
         count = 0;
         if (filter_param.edge_1 == filter_param.edge_2 && filter_param.edge_2 == 0 )
@@ -247,6 +294,14 @@ void CalibrateWindow::state_change(int changed)
             cvReleaseImage( &buffer );
             if (filter_param.bold)
                 trmMosbat::bold_filter(imgclone,filter_param.bold);
+            if (filter_param.narrow)
+                trmMosbat::narrowFilter(imgclone,filter_param.narrow);
+            if (filter_param.edge_corner)
+            {
+                buffer = imgclone;
+                imgclone = trmMosbat::doCanny( imgclone, filter_param.edge_corner ,filter_param.edge_corner * 3, 3 );
+                cvReleaseImage( &buffer );
+            }
             CvSeq* firstContour = NULL;
             CvMemStorage* cnt_storage = cvCreateMemStorage();
             cvFindContours(imgclone,cnt_storage,&firstContour,sizeof(CvContour),CV_RETR_TREE,CV_CHAIN_APPROX_SIMPLE);
@@ -301,11 +356,11 @@ void CalibrateWindow::slider1_change(int value)
     treshold_1 = value;
     if (chk1->isChecked())
     {
-        if (state == TRM_STATE_EDGE)
+        if (calibrate_state == TRM_STATE_EDGE)
 		{
         	slider2->setValue(value/3);
         }
-        else if (state == TRM_STATE_RESULT)
+        else if (calibrate_state == TRM_STATE_RESULT)
 		{
         	;
 		}
@@ -316,11 +371,11 @@ void CalibrateWindow::slider1_change(int value)
     }
     if (chk2->isChecked())
     {
-        if (state == TRM_STATE_EDGE)
+        if (calibrate_state == TRM_STATE_EDGE)
 		{
         	;
         }
-        else if (state == TRM_STATE_RESULT)
+        else if (calibrate_state == TRM_STATE_RESULT)
 		{
             ;
 		}
@@ -345,7 +400,7 @@ void CalibrateWindow::slider3_change(int value)
 {
     treshold_3 = value;
     vslider1_label->setText(QString("value = %1").arg(value));
-    if (state == TRM_STATE_EDGE && a_equal->isEnabled())
+    if (calibrate_state == TRM_STATE_EDGE && a_equal->isEnabled())
     {
        vslider2->setValue(value);
     }
@@ -366,23 +421,23 @@ void CalibrateWindow::chk1_change()
 {
     if (chk1->isChecked())
     {
-        if (state == TRM_STATE_EDGE)
+        if (calibrate_state == TRM_STATE_EDGE)
         {
 			slider2->setValue(slider1->value()/3);
             slider2->setEnabled(!chk1->isChecked());
         }
-        else if (state == TRM_STATE_CORNER)
+        else if (calibrate_state == TRM_STATE_CORNER)
         {
             ;
 		}
     }
 	else
 	{
-        if (state == TRM_STATE_EDGE)
+        if (calibrate_state == TRM_STATE_EDGE)
         {
             slider2->setEnabled(!chk1->isChecked());
         }
-        else if (state == TRM_STATE_CORNER)
+        else if (calibrate_state == TRM_STATE_CORNER)
 		{
             ;
 		}
@@ -394,22 +449,22 @@ void CalibrateWindow::chk2_change()
 {
     if (chk2->isChecked())
     {
-        if (state == TRM_STATE_EDGE)
+        if (calibrate_state == TRM_STATE_EDGE)
         {
             ;
         }
-        else if (state == TRM_STATE_RESULT)
+        else if (calibrate_state == TRM_STATE_RESULT)
 		{
             ;
 		}
 	}
 	else
 	{
-        if (state == TRM_STATE_EDGE)
+        if (calibrate_state == TRM_STATE_EDGE)
         {
             ;
         }
-        else if (state == TRM_STATE_RESULT)
+        else if (calibrate_state == TRM_STATE_RESULT)
 		{
             ;
 		}
@@ -461,6 +516,7 @@ void CalibrateWindow::hough_clicked(bool state)
 {
     if (state)
     {
+        treshold_2 = 50;
         a_feature->setChecked(false);
         a_corner->setChecked(false);
         state_change(1);
@@ -482,15 +538,15 @@ void CalibrateWindow::save_clicked()
 
 void CalibrateWindow::back_clicked()
 {
-    if (state == TRM_STATE_FRAME)
+    if (calibrate_state == TRM_STATE_FRAME)
     {
         close();
     }
-    else if (state == TRM_STATE_EDGE)
+    else if (calibrate_state == TRM_STATE_EDGE)
     {
         if (isVideo)
         {
-            state = TRM_STATE_FRAME;
+            calibrate_state = TRM_STATE_FRAME;
             state_change(1);
             slider1->setValue(filter_param.frame_num);
             slider2->setValue(filter_param.calibre_width);
@@ -502,7 +558,7 @@ void CalibrateWindow::back_clicked()
             close();
         }
     }
-    else if (state == TRM_STATE_CORNER)
+    else if (calibrate_state == TRM_STATE_CORNER)
     {
         if (image != NULL)
         {
@@ -510,7 +566,7 @@ void CalibrateWindow::back_clicked()
         }
         image = cvCreateImage( cvGetSize(imagesrc), 8, 1 );
         cvCvtColor( imagesrc, image, CV_BGR2GRAY );
-        state = TRM_STATE_EDGE;
+        calibrate_state = TRM_STATE_EDGE;
         state_change(1);
         chk2->setChecked(true);
         slider1->setValue(filter_param.edge_1);
@@ -521,7 +577,7 @@ void CalibrateWindow::back_clicked()
         option_menu->removeAction(a_loop);
         algorithm_menu->setEnabled(false);
     }
-    else if (state == TRM_STATE_RESULT)
+    else if (calibrate_state == TRM_STATE_RESULT)
     {
         if (image != NULL)
         {
@@ -537,7 +593,7 @@ void CalibrateWindow::back_clicked()
         IplImage *buffer = image;
         image = trmMosbat::doCanny( image, filter_param.edge_1 ,filter_param.edge_2, 3 );
         cvReleaseImage( &buffer );
-        state = TRM_STATE_CORNER;
+        calibrate_state = TRM_STATE_CORNER;
 
         option_menu->addAction(a_loop);
         option_menu->setEnabled(true);
@@ -545,6 +601,8 @@ void CalibrateWindow::back_clicked()
         state_change(1);
         slider1->setValue(filter_param.bold);
         vslider1->setValue(filter_param.corner_min);
+        slider2->setValue(filter_param.narrow);
+        vslider2->setValue(filter_param.edge_corner);
         chk1->setChecked(true);
         algorithm_menu->setEnabled(true);
         next_btn->setText("Next");
@@ -559,14 +617,14 @@ void CalibrateWindow::next_clicked()
         image = imgout;
         imgout = NULL;
     }
-    if (state == TRM_STATE_FRAME)
+    if (calibrate_state == TRM_STATE_FRAME)
     {
         filter_param.frame_num = treshold_1;
         if (chk2->isChecked())
         {
             filter_param.calibre_width = treshold_1;
         }
-        state = TRM_STATE_EDGE;
+        calibrate_state = TRM_STATE_EDGE;
         state_change(1);
         chk1->setChecked(true);
         chk2->setChecked(true);
@@ -578,35 +636,42 @@ void CalibrateWindow::next_clicked()
         option_menu->addAction(a_equal);
         option_menu->removeAction(a_width);
     }
-    else if (state == TRM_STATE_EDGE)
+    else if (calibrate_state == TRM_STATE_EDGE)
     {
         filter_param.edge_1 = treshold_1;
         filter_param.edge_2 = treshold_2;
         filter_param.erode = treshold_3;
         filter_param.dilate = treshold_4;
-        state = TRM_STATE_CORNER;
+        treshold_1 = 0;
+        treshold_2 = 0;
+        calibrate_state = TRM_STATE_CORNER;
         state_change(1);
         vslider1->setValue(filter_param.corner_min);
         chk1->setChecked(true);
         algorithm_menu->setEnabled(true);
         slider1->setValue(filter_param.bold);
+        slider2->setValue(filter_param.narrow);
+        vslider2->setValue(filter_param.edge_corner);
 
         option_menu->removeAction(a_equal);
         option_menu->removeAction(a_width);
         option_menu->addAction(a_loop);
+
     }
-    else if (state == TRM_STATE_CORNER)
+    else if (calibrate_state == TRM_STATE_CORNER)
     {
         filter_param.bold = treshold_1;
+        filter_param.narrow = treshold_2;
         filter_param.corner_min = treshold_3;
-        state = TRM_STATE_RESULT;
+        filter_param.edge_corner = treshold_4;
+        calibrate_state = TRM_STATE_RESULT;
         state_change(1);
         next_btn->setText("Finish");
         option_menu->removeAction(a_loop);
         option_menu->setEnabled(false);
         algorithm_menu->setEnabled(false);
     }
-    else if (state == TRM_STATE_RESULT)
+    else if (calibrate_state == TRM_STATE_RESULT)
     {
         trmMosbat::Saveparam(filter_param,"settings.json");
         close();
@@ -643,7 +708,7 @@ void CalibrateWindow::open_clicked()
         int diff = surface_height - floor((surface_width/image->width)*image->height);
         chk2->setChecked(false);
 
-        state = TRM_STATE_FRAME;
+        calibrate_state = TRM_STATE_FRAME;
 
         option_menu->addAction(a_width);
 
@@ -665,7 +730,7 @@ void CalibrateWindow::openimage_clicked()
         isVideo = false;
         imagesrc = cvLoadImage(filename.toLocal8Bit().data());
         image = cvLoadImage(filename.toLocal8Bit().data(),CV_LOAD_IMAGE_GRAYSCALE);
-        state = TRM_STATE_EDGE;
+        calibrate_state = TRM_STATE_EDGE;
         chk1->setChecked(false);
         slider1->setValue(0);
 
@@ -728,7 +793,7 @@ void CalibrateWindow::CreateMenu()
     a_hough->setCheckable(true);
     a_corner->setCheckable(true);
 
-    state = TRM_STATE_EDGE;
+    calibrate_state = TRM_STATE_EDGE;
     a_equal->setChecked(true);
     a_feature->setChecked(true);
     algorithm_menu->setEnabled(false);

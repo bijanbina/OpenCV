@@ -342,6 +342,8 @@ trmParam trmMosbat::Loadparam(char *filename)
             return_data.bold = json_obj.get("Bold",1).asInt();
             return_data.erode = json_obj.get("Erode",1).asInt();
             return_data.dilate = json_obj.get("Dilate",1).asInt();
+            return_data.narrow = json_obj.get("Narrow",1).asInt();
+            return_data.edge_corner = json_obj.get("Edge Corner Detection",1).asInt();
             return_data.calibre_width = json_obj.get("Calibre Image Width",calib_prev_size).asInt();
             return_data.frame_num = json_obj.get("Start Frame Number",0).asInt();
             return_data.isVideo = json_obj.get("Is Video",false).asBool();
@@ -364,6 +366,8 @@ trmParam trmMosbat::Loadparam(char *filename)
     else
     {
         return_data.bold = 1;
+        return_data.narrow = 0;
+        return_data.edge_corner = 5;
         return_data.erode = 12;
         return_data.dilate = 12;
         return_data.edge_1 = 383;
@@ -385,6 +389,9 @@ void trmMosbat::Saveparam(trmParam data,char *filename)
     edge["Treshold 2"] = data.edge_2;
     json_main["Erode"] = data.erode;
     json_main["Dilate"] = data.dilate;
+    json_main["Bold"] = data.bold;
+    json_main["Narrow"] = data.narrow;
+    json_main["Edge Corner Detection"] = data.edge_corner;
     json_main["Bold"] = data.bold;
     json_main["Corner Minimum Distance"] = data.corner_min;
     json_main["File Address"] = data.filename.toUtf8().data();
@@ -418,6 +425,20 @@ trmMosbat *mosbatFromImage(IplImage *imagesrc,trmParam filterParam)
     cvReleaseImage( &buffer );
     if (filterParam.bold)
         trmMosbat::bold_filter(imgclone,filterParam.bold);
+    if (filterParam.narrow)
+        trmMosbat::narrowFilter(imgclone,filterParam.narrow);
+    if (filterParam.edge_corner)
+    {
+        buffer = imgclone;
+        imgclone = trmMosbat::doCanny( imgclone, filterParam.edge_corner ,filterParam.edge_corner * 3, 3 );
+        cvReleaseImage( &buffer );
+    }
+
+//    cvNamedWindow( "Example1", CV_WINDOW_AUTOSIZE );
+//    cvShowImage( "Example1", imgclone );
+//    cvWaitKey(0);
+//    cvDestroyWindow( "Example1" );
+
     CvSeq* firstContour = NULL;
     CvMemStorage* cnt_storage = cvCreateMemStorage();
     cvFindContours(imgclone,cnt_storage,&firstContour,sizeof(CvContour),CV_RETR_TREE,CV_CHAIN_APPROX_SIMPLE);
@@ -488,7 +509,35 @@ void trmMosbat::bold_filter(IplImage *in,int kernel_size)
         {
             if (imgdata[x+kernel_size/2][y+kernel_size/2] == 255 )
             {
-                cvRectangle(in,cvPoint(x,y),cvPoint(x+kernel_size,y+kernel_size),cvScalarAll(255));
+                //cvRectangle(in,cvPoint(x,y),cvPoint(x+kernel_size,y+kernel_size),cvScalarAll(255));
+                cvCircle(in,cvPoint(x,y),kernel_size,cvScalarAll(255),kernel_size/2+1);
+
+            }
+        }
+    }
+}
+
+void trmMosbat::narrowFilter(IplImage *in,int kernel_size)
+{
+    cv::Mat grayFrame = cv::Mat(in);
+    unsigned char imgdata[grayFrame.cols][grayFrame.rows];
+    for (int y = 0 ; y < grayFrame.rows ; y++)
+    {
+        const unsigned char* ptr = (unsigned char*)(grayFrame.data + y * grayFrame.step);
+        for (int x = 0 ; x < grayFrame.cols ; x++ )
+        {
+            imgdata[x][y] = *ptr;
+            ptr++;
+        }
+    }
+    for (int x = 0 ; x < grayFrame.cols - kernel_size ; x++)
+    {
+        for (int y = 0 ; y < grayFrame.rows - kernel_size ; y++ )
+        {
+            if (imgdata[x+kernel_size/2][y+kernel_size/2] == 0 )
+            {
+                //cvRectangle(in,cvPoint(x,y),cvPoint(x+kernel_size,y+kernel_size),cvScalarAll(0));
+                cvCircle(in,cvPoint(x,y),kernel_size,cvScalarAll(0),kernel_size/2+1);
 
             }
         }

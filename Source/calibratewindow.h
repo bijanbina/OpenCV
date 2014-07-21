@@ -109,7 +109,7 @@ private:
     int           framePosition;
     int           surface_height;
     int           count;
-    int           state;
+    int           calibrate_state;
     double        surface_width;
     QString       filename;
     bool          isVideo;

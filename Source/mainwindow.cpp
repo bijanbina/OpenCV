@@ -144,6 +144,7 @@ void MainWindow::updatePrev()
         IplImage *imgout  = cvCreateImage(cvGetSize(imagesrc), imagesrc->depth, imagesrc->nChannels);
         cvCopy(imagesrc, imgout, NULL);
         cvResetImageROI(imagesrc);
+        std::cout << imagesrc->widthStep << " and " <<  imagesrc->width << std::endl;
         imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_RGB888).rgbSwapped();
         preview->setPixmap(QPixmap::fromImage(imageView.scaled(prev_size,floor((prev_size/imgout->width)*imgout->height),Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
         cvReleaseImage( &imgout );
@@ -155,6 +156,7 @@ void MainWindow::updatePrev()
         int temp = filter_param.bold;
         filter_param.bold = 0;
         plus_obj = mosbatFromImage(imagesrc,filter_param) ;
+        filter_param.bold = temp;
     }
     if (plus_obj != NULL)
     {

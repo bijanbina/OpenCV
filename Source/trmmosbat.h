@@ -3,6 +3,7 @@
 
 #include <QtWidgets>
 #include <cv.h>
+#include <highgui.h>
 #include <unistd.h>
 #include <math.h>
 #include <iostream>
@@ -19,6 +20,8 @@ struct trm_param
     int erode;
     int dilate;
     int bold;
+    int narrow;
+    int edge_corner;
     int corner_min;
     int frame_num;
     bool isVideo;
@@ -37,6 +40,7 @@ public:
     CvPoint *getRect(); //return rectangle which contain plus
     CvRect   getRegion(); //return rectangle which contain plus
     static void bold_filter(IplImage *in,int kernel_size);
+    static void narrowFilter(IplImage *in,int kernel_size);
     static IplImage* doCanny( IplImage* in, double lowThresh, double highThresh, double aperture );
     double dist_cv(CvPoint pt1, CvPoint pt2);
 
