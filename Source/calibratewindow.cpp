@@ -123,7 +123,7 @@ void CalibrateWindow::state_change(int changed)
     }
     else if (calibrate_state == TRM_STATE_EDGE)
     {
-        if ( chk2->isChecked() )
+        if ( treshold_3 != 0 || treshold_4 != 0 )
         {
             if (a_equal->isChecked())
             {
@@ -143,7 +143,7 @@ void CalibrateWindow::state_change(int changed)
         }
         if (treshold_1 == 0 && treshold_2 == 0 )
         {
-            if ( chk2->isChecked() )
+            if ( treshold_3 != 0 || treshold_4 != 0 )
             {
                 imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
             }
@@ -154,7 +154,7 @@ void CalibrateWindow::state_change(int changed)
         }
         else
         {
-            if ( chk2->isChecked() )
+            if ( treshold_3 != 0 || treshold_4 != 0 )
             {
                 imgout = trmMosbat::doCanny( imgout, treshold_1 ,treshold_2, 3 );
                 imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
@@ -167,7 +167,7 @@ void CalibrateWindow::state_change(int changed)
         }
         surface->setPixmap(QPixmap::fromImage(imageView.scaled(surface_width,surface_height,Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
         chk1->setText("Proportion 3");
-        chk2->setText("Dilate+Erode");
+        chk2->setText("Reversed");
 		slider1->setMaximum(1000);
         slider2->setMaximum(1000);
         slider2->setMinimum(0);
