@@ -23,9 +23,9 @@ CalibrateWindow::CalibrateWindow(QWidget *parent) :
     connect(a_loop, SIGNAL(triggered(bool)),this,SLOT(state_change()));
     connect(a_width, SIGNAL(triggered(bool)),this,SLOT(width_clicked()));
     connect(a_equal, SIGNAL(triggered(bool)),this,SLOT(equal_clicked(bool)));
-    connect(a_feature, SIGNAL(triggered(bool)),this,SLOT(feature_clicked(bool)));
-    connect(a_corner, SIGNAL(triggered(bool)),this,SLOT(corner_clicked(bool)));
-    connect(a_hough, SIGNAL(triggered(bool)),this,SLOT(hough_clicked(bool)));
+    connect(a_mclose, SIGNAL(triggered(bool)),this,SLOT(mclose_clicked(bool)));
+    connect(a_mreversed, SIGNAL(triggered(bool)),this,SLOT(mreversed_clicked(bool)));
+    connect(a_mopen, SIGNAL(triggered(bool)),this,SLOT(mopen_clicked(bool)));
 
     filename = filter_param.filename;
     isVideo = filter_param.isVideo;
@@ -136,8 +136,16 @@ void CalibrateWindow::state_change(int changed)
                 treshold_4 = vslider2->value();
             }
             imgout = cvCreateImage(cvGetSize(image),image->depth,image->nChannels);
-            cvErode( image, imgout , NULL , treshold_3 );
-            cvDilate( imgout, imgout , NULL , treshold_4 );
+            if (morphology_state == MORPH_STATE_NORMALL)
+            {
+                cvErode( image, imgout , NULL , treshold_3 );
+                cvDilate( imgout, imgout , NULL , treshold_4 );
+            }
+            else if (morphology_state == MORPH_STATE_REVERSED)
+            {
+                cvDilate( imgout, imgout , NULL , treshold_4 );
+                cvErode( image, imgout , NULL , treshold_3 );
+            }
             imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
             surface->setPixmap(QPixmap::fromImage(imageView.scaled(surface_width,surface_height,Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
         }
@@ -167,7 +175,7 @@ void CalibrateWindow::state_change(int changed)
         }
         surface->setPixmap(QPixmap::fromImage(imageView.scaled(surface_width,surface_height,Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
         chk1->setText("Proportion 3");
-        chk2->setText("Reversed");
+        chk2->setText("NULL");
 		slider1->setMaximum(1000);
         slider2->setMaximum(1000);
         slider2->setMinimum(0);
@@ -186,83 +194,48 @@ void CalibrateWindow::state_change(int changed)
         {
             trmMosbat::narrowFilter(imgout,treshold_2);
         }
-        if (treshold_4 != 0 && treshold_4 < 15)
+        if (chk1->isChecked())
         {
-            imgout = trmMosbat::doCanny( imgout, treshold_4 ,treshold_4 *3, 3 );
+            imgout = trmMosbat::doCanny( imgout, 20 ,60, 3 );
         }
-        if (a_feature->isChecked())
+        IplImage *imgclone = cvCloneImage(imgout);
+        CvSeq* firstContour = NULL;
+        CvMemStorage* cnt_storage = cvCreateMemStorage();
+        CvMemStorage* poly_storage = cvCreateMemStorage();
+        cvFindContours(imgclone,cnt_storage,&firstContour,sizeof(CvContour),CV_RETR_TREE,CV_CHAIN_APPROX_SIMPLE);
+        cvReleaseImage( &imgclone );
+        if (chk2->isChecked())
         {
-            IplImage *imgclone = cvCloneImage(imgout);
-            CvSeq* firstContour = NULL;
-            CvMemStorage* cnt_storage = cvCreateMemStorage();
-            CvMemStorage* poly_storage = cvCreateMemStorage();
-            cvFindContours(imgclone,cnt_storage,&firstContour,sizeof(CvContour),CV_RETR_TREE,CV_CHAIN_APPROX_SIMPLE);
-            cvReleaseImage( &imgclone );
-            if (chk2->isChecked())
-            {
-                cvZero( imgout );
-            }
-            CvSeq *dummy_seq = firstContour;
-            CvSeq *poly = NULL;
+            cvZero( imgout );
+        }
+        CvSeq *dummy_seq = firstContour;
+        CvSeq *poly = NULL;
 
-            int i = 0;
-            cv::Mat matout = imgout;
-            while( dummy_seq != NULL )
+        int i = 0;
+        cv::Mat matout = imgout;
+        while( dummy_seq != NULL )
+        {
+            poly = cvApproxPoly(dummy_seq,sizeof(CvContour),poly_storage, CV_POLY_APPROX_DP,treshold_3);
+            if (poly->total == 12 || a_loop->isChecked())
             {
-                poly = cvApproxPoly(dummy_seq,sizeof(CvContour),poly_storage, CV_POLY_APPROX_DP,treshold_3);
-                if (poly->total == 12 || a_loop->isChecked())
+                for(i = 0; i < poly->total; i++)
                 {
-                    for(i = 0; i < poly->total; i++)
-                    {
-                        CvPoint *temp_point = (CvPoint*)cvGetSeqElem(poly,i);
-                        cv::circle( matout, *temp_point, 10.0, 255, 3, 1 );
-                    }
+                    CvPoint *temp_point = (CvPoint*)cvGetSeqElem(poly,i);
+                    cv::circle( matout, *temp_point, 10.0, 255, 3, 1 );
                 }
-                dummy_seq = dummy_seq->h_next;
             }
-            cvClearMemStorage(poly_storage);
-            cvReleaseMemStorage(&poly_storage);
-            cvClearMemStorage(cnt_storage);
-            cvReleaseMemStorage(&cnt_storage);
-            slider2->setEnabled(false);
-            vslider2->setEnabled(false);
+            dummy_seq = dummy_seq->h_next;
         }
-        else if (a_hough->isChecked() )
-        {
-            CvSeq* firstContour = NULL;
-            CvMemStorage* hough_storage = cvCreateMemStorage();
-            CvMemStorage* poly_storage = cvCreateMemStorage();
-            firstContour = cvHoughLines2(imgout,hough_storage,CV_HOUGH_STANDARD,1,CV_PI/180,treshold_2);
-            if (chk2->isChecked())
-            {
-                cvZero( imgout );
-            }
-            CvSeq *dummy_seq = firstContour;
-
-            int i = 0;
-            cv::Mat matout = imgout;
-            for(i = 0; i < dummy_seq->total; i++)
-            {
-                float *lines = (float *)cvGetSeqElem(dummy_seq,i);
-                float rho = lines[0], theta = lines[1];
-                CvPoint pt1, pt2;
-                double a = cos(theta), b = sin(theta);
-                double x0 = a*rho, y0 = b*rho;
-                pt1.x = cvRound(x0 + 1000*(-b));
-                pt1.y = cvRound(y0 + 1000*(a));
-                pt2.x = cvRound(x0 - 1000*(-b));
-                pt2.y = cvRound(y0 - 1000*(a));
-                cv::line( matout, pt1, pt2, cvScalar(255,255,255), 3, CV_AA);
-            }
-            cvClearMemStorage(poly_storage);
-            cvReleaseMemStorage(&poly_storage);
-            cvClearMemStorage(hough_storage);
-            cvReleaseMemStorage(&hough_storage);
-        }
+        cvClearMemStorage(poly_storage);
+        cvReleaseMemStorage(&poly_storage);
+        cvClearMemStorage(cnt_storage);
+        cvReleaseMemStorage(&cnt_storage);
+        slider2->setEnabled(false);
+        vslider2->setEnabled(false);
 
         imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
         surface->setPixmap(QPixmap::fromImage(imageView.scaled(surface_width,surface_height,Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
-        chk1->setText("Bold Filter");
+        chk1->setText("Canny");
         chk2->setText("Zero Input");
         slider1->setMaximum(20);
         slider2->setMaximum(20);
@@ -435,7 +408,7 @@ void CalibrateWindow::chk1_change()
 	{
         if (calibrate_state == TRM_STATE_EDGE)
         {
-            slider2->setEnabled(!chk1->isChecked());
+            ;
         }
         else if (calibrate_state == TRM_STATE_CORNER)
 		{
@@ -447,83 +420,75 @@ void CalibrateWindow::chk1_change()
 
 void CalibrateWindow::chk2_change()
 {
-    if (chk2->isChecked())
-    {
-        if (calibrate_state == TRM_STATE_EDGE)
-        {
-            ;
-        }
-        else if (calibrate_state == TRM_STATE_RESULT)
-		{
-            ;
-		}
-	}
-	else
-	{
-        if (calibrate_state == TRM_STATE_EDGE)
-        {
-            ;
-        }
-        else if (calibrate_state == TRM_STATE_RESULT)
-		{
-            ;
-		}
-	}
     state_change();
 }
 
 void CalibrateWindow::equal_clicked(bool state)
 {
+    state_change(0);
+}
+
+void CalibrateWindow::mclose_clicked(bool state)
+{
     if (state)
     {
+        a_mreversed->setChecked(false);
+        a_mopen->setChecked(false);
+        a_mnormal->setChecked(false);
+        morphology_state = MORPH_STATE_CLOSE;
         state_change(0);
     }
     else
     {
+        a_mclose->setChecked(true);
+    }
+}
+
+void CalibrateWindow::mopen_clicked(bool state)
+{
+    if (state)
+    {
+        a_mclose->setChecked(false);
+        a_mreversed->setChecked(false);
+        a_mnormal->setChecked(false);
+        morphology_state = MORPH_STATE_OPEN;
         state_change(0);
     }
-}
-
-void CalibrateWindow::feature_clicked(bool state)
-{
-    if (state)
-    {
-        a_corner->setChecked(false);
-        a_hough->setChecked(false);
-        state_change(1);
-    }
     else
     {
-        a_feature->setChecked(true);
+        a_mopen->setChecked(true);
     }
 }
 
-void CalibrateWindow::corner_clicked(bool state)
+void CalibrateWindow::mnormal_clicked(bool state)
 {
     if (state)
     {
-        a_feature->setChecked(false);
-        a_hough->setChecked(false);
-        state_change(1);
+        a_mclose->setChecked(false);
+        a_mreversed->setChecked(false);
+        a_mopen->setChecked(false);
+        morphology_state = MORPH_STATE_NORMALL;
+        state_change(0);
     }
     else
     {
-        a_corner->setChecked(true);
+        a_mnormal->setChecked(true);
     }
 }
 
-void CalibrateWindow::hough_clicked(bool state)
+void CalibrateWindow::mreversed_clicked(bool state)
 {
     if (state)
     {
-        treshold_2 = 50;
-        a_feature->setChecked(false);
-        a_corner->setChecked(false);
-        state_change(1);
+        a_mclose->setChecked(false);
+        a_mopen->setChecked(false);
+        a_mnormal->setChecked(false);
+        morphology_state = MORPH_STATE_REVERSED;
+        state_change(0);
     }
     else
     {
-        a_hough->setChecked(true);
+        a_mreversed->setChecked(true);
     }
 }
 
@@ -552,6 +517,7 @@ void CalibrateWindow::back_clicked()
             slider2->setValue(filter_param.calibre_width);
             option_menu->removeAction(a_equal);
             option_menu->addAction(a_width);
+            morphology_menu->setEnabled(false);
         }
         else
         {
@@ -568,14 +534,14 @@ void CalibrateWindow::back_clicked()
         cvCvtColor( imagesrc, image, CV_BGR2GRAY );
         calibrate_state = TRM_STATE_EDGE;
         state_change(1);
-        chk2->setChecked(true);
+        chk2->setChecked(false);
         slider1->setValue(filter_param.edge_1);
         slider2->setValue(filter_param.edge_2);
         vslider1->setValue(filter_param.erode);
         vslider2->setValue(filter_param.dilate);
         option_menu->addAction(a_equal);
         option_menu->removeAction(a_loop);
-        algorithm_menu->setEnabled(false);
+        morphology_menu->setEnabled(true);
     }
     else if (calibrate_state == TRM_STATE_RESULT)
     {
@@ -604,7 +570,6 @@ void CalibrateWindow::back_clicked()
         slider2->setValue(filter_param.narrow);
         vslider2->setValue(filter_param.edge_corner);
         chk1->setChecked(true);
-        algorithm_menu->setEnabled(true);
         next_btn->setText("Next");
     }
 }
@@ -627,7 +592,7 @@ void CalibrateWindow::next_clicked()
         calibrate_state = TRM_STATE_EDGE;
         state_change(1);
         chk1->setChecked(true);
-        chk2->setChecked(true);
+        chk2->setChecked(false);
         slider1->setValue(filter_param.edge_1);
         slider2->setValue(filter_param.edge_2);
         vslider1->setValue(filter_param.erode);
@@ -635,6 +600,7 @@ void CalibrateWindow::next_clicked()
 
         option_menu->addAction(a_equal);
         option_menu->removeAction(a_width);
+        morphology_menu->setEnabled(true);
     }
     else if (calibrate_state == TRM_STATE_EDGE)
     {
@@ -648,7 +614,6 @@ void CalibrateWindow::next_clicked()
         state_change(1);
         vslider1->setValue(filter_param.corner_min);
         chk1->setChecked(true);
-        algorithm_menu->setEnabled(true);
         slider1->setValue(filter_param.bold);
         slider2->setValue(filter_param.narrow);
         vslider2->setValue(filter_param.edge_corner);
@@ -656,6 +621,7 @@ void CalibrateWindow::next_clicked()
         option_menu->removeAction(a_equal);
         option_menu->removeAction(a_width);
         option_menu->addAction(a_loop);
+        morphology_menu->setEnabled(false);
 
     }
     else if (calibrate_state == TRM_STATE_CORNER)
@@ -669,7 +635,6 @@ void CalibrateWindow::next_clicked()
         next_btn->setText("Finish");
         option_menu->removeAction(a_loop);
         option_menu->setEnabled(false);
-        algorithm_menu->setEnabled(false);
     }
     else if (calibrate_state == TRM_STATE_RESULT)
     {
@@ -776,10 +741,11 @@ void CalibrateWindow::CreateMenu()
     a_save = file_menu->addAction("Save");
     a_replace = file_menu->addAction("Replace");
 
-    algorithm_menu = menu->addMenu("Algorithm");
-    a_feature = algorithm_menu->addAction("Feature Detection");
-    a_hough = algorithm_menu->addAction("Hough Transform");
-    a_corner = algorithm_menu->addAction("Corner Detection");
+    morphology_menu = menu->addMenu("Morphology");
+    a_mnormal = morphology_menu->addAction("Normal");
+    a_mreversed = morphology_menu->addAction("Reversed");
+    a_mopen = morphology_menu->addAction("Open");
+    a_mclose = morphology_menu->addAction("Close");
 
     option_menu = menu->addMenu("Option");
     a_equal = new QAction("Erode = Dilate",NULL);
@@ -789,14 +755,15 @@ void CalibrateWindow::CreateMenu()
 
     a_equal->setCheckable(true);
     a_loop->setCheckable(true);
-    a_feature->setCheckable(true);
-    a_hough->setCheckable(true);
-    a_corner->setCheckable(true);
+    a_mclose->setCheckable(true);
+    a_mopen->setCheckable(true);
+    a_mreversed->setCheckable(true);
+    a_mnormal->setCheckable(true);
 
     calibrate_state = TRM_STATE_EDGE;
     a_equal->setChecked(true);
-    a_feature->setChecked(true);
-    algorithm_menu->setEnabled(false);
+    a_mnormal->setChecked(true);
+    morphology_menu->setEnabled(false);
 
     help_menu = menu->addMenu("Help");
     a_about = help_menu->addAction("About");
@@ -875,6 +842,7 @@ void CalibrateWindow::CreateLayout(QWidget *parent)
     treshold_2 = 0;
     treshold_3 = 0;
     treshold_4 = 0;
+    morphology_state = MORPH_STATE_NORMALL;
     surface_width = filter_param.calibre_width;
 
 

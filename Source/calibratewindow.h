@@ -7,10 +7,15 @@
 #include <cv.h>
 #include <trmmosbat.h>
 
-#define TRM_STATE_FRAME 0
-#define TRM_STATE_EDGE 1
-#define TRM_STATE_CORNER 2
-#define TRM_STATE_RESULT 3
+#define TRM_STATE_FRAME     0
+#define TRM_STATE_EDGE      1
+#define TRM_STATE_CORNER    2
+#define TRM_STATE_RESULT    3
+
+#define MORPH_STATE_NORMALL     0
+#define MORPH_STATE_REVERSED    1
+#define MORPH_STATE_OPEN        2
+#define MORPH_STATE_CLOSE       3
 
 class CalibrateWindow : public QDialog {
     Q_OBJECT
@@ -43,9 +48,10 @@ private slots:
     void next_clicked();
     void width_clicked();
     void equal_clicked(bool state);
-    void feature_clicked(bool state);
-    void corner_clicked(bool state);
-    void hough_clicked(bool state);
+    void mreversed_clicked(bool state);
+    void mclose_clicked(bool state);
+    void mopen_clicked(bool state);
+    void mnormal_clicked(bool state);
 
 
 private:
@@ -61,7 +67,7 @@ private:
 	QCheckBox    *chk2;
     QMenuBar     *menu;
     QMenu        *file_menu;
-    QMenu		 *algorithm_menu;
+    QMenu		 *morphology_menu;
     QMenu		 *option_menu;
     QMenu		 *help_menu;
     QAction		 *a_save;
@@ -72,9 +78,10 @@ private:
     QAction		 *a_equal;
     QAction		 *a_width;
     QAction		 *a_loop;
-    QAction		 *a_hough;
-    QAction		 *a_feature;
-    QAction		 *a_corner;
+    QAction		 *a_mnormal;
+    QAction		 *a_mreversed;
+    QAction		 *a_mopen;
+    QAction		 *a_mclose;
     IplImage     *image;
     IplImage     *imgout;
     IplImage     *imagesrc; 
@@ -110,6 +117,7 @@ private:
     int           surface_height;
     int           count;
     int           calibrate_state;
+    int           morphology_state;
     double        surface_width;
     QString       filename;
     bool          isVideo;
