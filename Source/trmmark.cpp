@@ -529,6 +529,8 @@ trmMark *markFromImage(IplImage *imagesrc,trmParam filterParam,bool *isAuto)
         (*isAuto) = false;
     if (plus_mark == NULL )
     {
+        cvClearMemStorage(cnt_storage);
+
         if (isAuto != NULL)
             (*isAuto) = true;
         for (int i = 0 ; i < TRM_AUTO_SIZE ; i++)
@@ -538,10 +540,43 @@ trmMark *markFromImage(IplImage *imagesrc,trmParam filterParam,bool *isAuto)
                 trmMark::bold_filter(tempimg,auto_bold[i]);
             if (auto_narrow[i])
                 trmMark::narrowFilter(tempimg,auto_narrow[i]);
-            if (filterParam.edge_corner && auto_bold[i])
-            {
-                tempimg = trmMark::doCanny( tempimg, filterParam.edge_corner ,filterParam.edge_corner * 3 );
-            }
+            cvFindContours(tempimg,cnt_storage,&firstContour,sizeof(CvContour),CV_RETR_TREE,CV_CHAIN_APPROX_SIMPLE);
+            plus_mark = create_from_seq(firstContour,filterParam.corner_min , filterParam.maximum_error);
+            if ( plus_mark != NULL )
+                break;
+            tempimg = trmMark::doCanny( tempimg, filterParam.edge_corner ,filterParam.edge_corner * 3 );//Do canny after bold filter
+            cvFindContours(tempimg,cnt_storage,&firstContour,sizeof(CvContour),CV_RETR_TREE,CV_CHAIN_APPROX_SIMPLE);
+            plus_mark = create_from_seq(firstContour,filterParam.corner_min , filterParam.maximum_error);
+            cvReleaseImage(&tempimg);
+            if ( plus_mark != NULL )
+                break;
+        }
+    }
+    //Second try for auto setting
+    if (plus_mark == NULL )
+    {
+        cvClearMemStorage(cnt_storage);
+
+        autoimg = cvCreateImage( cvGetSize(imagesrc), 8, 1 );
+        cvCvtColor( imagesrc, autoimg, CV_BGR2GRAY );
+        cvErode( autoimg, autoimg , NULL , 25 );
+        cvDilate( autoimg, autoimg , NULL , 25 );
+        autoimg = trmMark::doCanny( autoimg, filterParam.edge_1 ,filterParam.edge_2 );
+
+        if (isAuto != NULL)
+            (*isAuto) = true;
+        for (int i = 0 ; i < TRM_AUTO_SIZE ; i++)
+        {
+            IplImage *tempimg = cvCloneImage(autoimg); //used for automode
+            if (auto_bold[i])
+                trmMark::bold_filter(tempimg,auto_bold[i]);
+            if (auto_narrow[i])
+                trmMark::narrowFilter(tempimg,auto_narrow[i]);
+            cvFindContours(tempimg,cnt_storage,&firstContour,sizeof(CvContour),CV_RETR_TREE,CV_CHAIN_APPROX_SIMPLE);
+            plus_mark = create_from_seq(firstContour,filterParam.corner_min , filterParam.maximum_error);
+            if ( plus_mark != NULL )
+                break;
+            tempimg = trmMark::doCanny( tempimg, filterParam.edge_corner ,filterParam.edge_corner * 3 );//Do canny after bold filter
             cvFindContours(tempimg,cnt_storage,&firstContour,sizeof(CvContour),CV_RETR_TREE,CV_CHAIN_APPROX_SIMPLE);
             plus_mark = create_from_seq(firstContour,filterParam.corner_min , filterParam.maximum_error);
             cvReleaseImage(&tempimg);
