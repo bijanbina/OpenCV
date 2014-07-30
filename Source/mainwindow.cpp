@@ -80,26 +80,48 @@ void MainWindow::analysis_clicked()
         std::cout << size << std::endl;
         QVector< double > X(size);
         QVector< double > Y(size);
+        QVector< double > T(size);
+        QVector< double > V(size);
         ptr = head->next;
+        double last_x , last_y;
+        V[0] = 0;
         for (int i = 0 ; i < size ; i++)
         {
             if (ptr == NULL)
                 break;
             X[i] = ptr->x;
             Y[i] = ptr->y;
+            T[i] = i;
+            if (i)
+                V[i] = cvSqrt((X[i] - last_x) * (X[i] - last_x) + (Y[i] - last_y) * (Y[i] - last_y) );
+            last_x = X[i];
+            last_y = Y[i];
             ptr = ptr->next;
         }
-        xy_curve->setPen( Qt::blue, 4 ),
-        xy_curve->setRenderHint( QwtPlotItem::RenderAntialiased, true );
 
-        QwtSymbol *symbol = new QwtSymbol( QwtSymbol::Ellipse,
-        QBrush( Qt::yellow ), QPen( Qt::red, 2 ), QSize( 8, 8 ) );
-        xy_curve->setSymbol( symbol );
         xy_curve->setSamples(X,Y);
-        xy_curve->attach(xy_plot);
         xy_plot->update();
+        xy_zoomer->zoomBase();
+        xy_plot->replot();
+
+        xt_curve->setSamples(T,X);
+        xt_plot->update();
+        xt_zoomer->zoomBase();
+        xt_plot->replot();
+
+        yt_curve->setSamples(T,Y);
+        yt_plot->update();
+        yt_zoomer->zoomBase();
+        yt_plot->replot();
+
+        vt_curve->setSamples(T,V);
+        vt_plot->update();
+        vt_zoomer->zoomBase();
+        vt_plot->replot();
+
         progress->setValue(0);
     }
+    update();
 }
 
 void MainWindow::slider1_change(int value)
@@ -267,9 +289,16 @@ void MainWindow::CreateLayout()
     QwtText title;
     title.setFont(font);
 
+    QwtSymbol *symbol = new QwtSymbol( QwtSymbol::Ellipse,
+    QBrush( Qt::yellow ), QPen( Qt::red , 2 ), QSize( 2, 2 ) );
+
     //XY
     xy_grid = new QwtPlotGrid();
-    xy_curve = new QwtPlotCurve(trUtf8("Signal"));
+    xy_curve = new QwtPlotCurve(trUtf8("Path"));
+    xy_curve->setPen( Qt::blue, 1 );
+    xy_curve->setRenderHint( QwtPlotItem::RenderAntialiased, true );
+    xy_curve->setSymbol( symbol );
+    xy_curve->attach(xy_plot);
     xy_plot ->canvas()->setStyleSheet("border: 0px;");
     xy_plot->titleLabel()->setStyleSheet("font-size: 12px");
     xy_plot ->insertLegend(new QwtLegend(), QwtPlot::RightLegend);
@@ -283,6 +312,10 @@ void MainWindow::CreateLayout()
     //Xt
     xt_grid = new QwtPlotGrid();
     xt_curve = new QwtPlotCurve(trUtf8("Signal"));
+    xt_curve->setPen( Qt::blue, 1 );
+    xt_curve->setRenderHint( QwtPlotItem::RenderAntialiased, true );
+    xt_curve->setSymbol( symbol );
+    xt_curve->attach(xt_plot);
     xt_plot ->canvas()->setStyleSheet("border: 0px;");
     xt_plot->titleLabel()->setStyleSheet("font-size: 12px");
     xt_plot ->insertLegend(new QwtLegend(), QwtPlot::RightLegend);
@@ -296,6 +329,10 @@ void MainWindow::CreateLayout()
     //Yt
     yt_grid = new QwtPlotGrid();
     yt_curve = new QwtPlotCurve(trUtf8("Signal"));
+    yt_curve->setPen( Qt::blue, 1 );
+    yt_curve->setRenderHint( QwtPlotItem::RenderAntialiased, true );
+    yt_curve->setSymbol( symbol );
+    yt_curve->attach(yt_plot);
     yt_plot ->canvas()->setStyleSheet("border: 0px;");
     yt_plot->titleLabel()->setStyleSheet("font-size: 12px");
     yt_plot ->insertLegend(new QwtLegend(), QwtPlot::RightLegend);
@@ -309,6 +346,10 @@ void MainWindow::CreateLayout()
     //Vt
     vt_grid = new QwtPlotGrid();
     vt_curve = new QwtPlotCurve(trUtf8("Signal"));
+    vt_curve->setPen( Qt::blue, 1 );
+    vt_curve->setRenderHint( QwtPlotItem::RenderAntialiased, true );
+    vt_curve->setSymbol( symbol );
+    vt_curve->attach(vt_plot);
     vt_plot ->canvas()->setStyleSheet("border: 0px;");
     vt_plot->titleLabel()->setStyleSheet("font-size: 12px");
     vt_plot ->insertLegend(new QwtLegend(), QwtPlot::RightLegend);
