@@ -14,11 +14,11 @@ TARGET = Tremor
 SOURCES += main.cpp\
         mainwindow.cpp\
 	calibratewindow.cpp \
-    trmmosbat.cpp
+    trmmark.cpp
 
 HEADERS  += mainwindow.h\
 	calibratewindow.h \
-    trmmosbat.h
+    trmmark.h
 
 PKGCONFIG += opencv jsoncpp
 CONFIG += link_pkgconfig

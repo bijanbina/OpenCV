@@ -1,8 +1,8 @@
-#include "trmmosbat.h"
+#include "trmmark.h"
 
-trmMosbat *create_from_point(CvSeq *points,double previous)
+trmMark *create_from_point(CvSeq *points,double previous)
 {
-    trmMosbat *obj = new trmMosbat;
+    trmMark *obj = new trmMark;
     int ID = 0;
     obj->middle.x = 0;
     obj->middle.y = 0;
@@ -226,14 +226,14 @@ trmMosbat *create_from_point(CvSeq *points,double previous)
 }
 
 
-trmMosbat *create_from_seq(CvSeq *head,double cornerMin,double treshold)
+trmMark *create_from_seq(CvSeq *head,double cornerMin,double treshold)
 {
     double minErorr = 9999;
 
     CvSeq *dummy = head;
     CvSeq *poly;
 
-    trmMosbat *temp,*result = NULL;
+    trmMark *temp,*result = NULL;
 
     CvMemStorage* strg = cvCreateMemStorage();
 
@@ -270,12 +270,12 @@ trmMosbat *create_from_seq(CvSeq *head,double cornerMin,double treshold)
     return result;
 }
 
-trmMosbat::trmMosbat()
+trmMark::trmMark()
 {
 
 }
 
-double trmMosbat::findAngle()
+double trmMark::findAngle()
 {
     double gradiant1 = findDerivative(top1,down1,center1,center4,true);
     gradiant1 += findDerivative(left1,right1,center1,center2);
@@ -289,12 +289,12 @@ double trmMosbat::findAngle()
 }
 
 
-double trmMosbat::dist_cv(CvPoint pt1, CvPoint pt2)
+double trmMark::dist_cv(CvPoint pt1, CvPoint pt2)
 {
     return cv::sqrt((pt1.x - pt2.x) * (pt1.x - pt2.x)  + (pt1.y - pt2.y) *  (pt1.y - pt2.y));
 }
 
-CvPoint* trmMosbat::getRect()
+CvPoint* trmMark::getRect()
 {
     double angle = findAngle();
 
@@ -343,7 +343,7 @@ CvPoint* trmMosbat::getRect()
 }
 
 
-CvRect trmMosbat::trmMosbat::getRegion()
+CvRect trmMark::trmMark::getRegion()
 {
     getRect();
     CvRect return_data = cvRect(rect[0].x,rect[0].y,rect[0].x,rect[0].y);
@@ -366,7 +366,7 @@ CvRect trmMosbat::trmMosbat::getRegion()
 
 }
 
-double trmMosbat::findDerivative(CvPoint pt1, CvPoint pt2, CvPoint pt3, CvPoint pt4,bool reverse)
+double trmMark::findDerivative(CvPoint pt1, CvPoint pt2, CvPoint pt3, CvPoint pt4,bool reverse)
 {
     long a1 = 4;
     long a2 = pt1.x + pt2.x + pt3.x + pt4.x;
@@ -393,7 +393,7 @@ double trmMosbat::findDerivative(CvPoint pt1, CvPoint pt2, CvPoint pt3, CvPoint 
     return slope;
 }
 
-QString trmMosbat::QStr_create(std::string buffer)
+QString trmMark::QStr_create(std::string buffer)
 {
     QString return_data;
     int len = strlen(buffer.c_str());
@@ -405,7 +405,7 @@ QString trmMosbat::QStr_create(std::string buffer)
     return return_data;
 }
 
-trmParam trmMosbat::Loadparam(char *filename)
+trmParam trmMark::Loadparam(char *filename)
 {
     trmParam return_data;
     QFile json_file(filename);
@@ -456,7 +456,7 @@ trmParam trmMosbat::Loadparam(char *filename)
     return return_data;
 }
 
-void trmMosbat::Saveparam(trmParam data,char *filename)
+void trmMark::Saveparam(trmParam data,char *filename)
 {
     Json::Value json_main;
     Json::Value edge;
@@ -489,7 +489,7 @@ void trmMosbat::Saveparam(trmParam data,char *filename)
     file.close();
 }
 
-trmMosbat *mosbatFromImage(IplImage *imagesrc,trmParam filterParam,bool *isAuto)
+trmMark *markFromImage(IplImage *imagesrc,trmParam filterParam,bool *isAuto)
 {
     IplImage *imgclone = cvCreateImage( cvGetSize(imagesrc), 8, 1 );
     cvCvtColor( imagesrc, imgclone, CV_BGR2GRAY );
@@ -497,17 +497,17 @@ trmMosbat *mosbatFromImage(IplImage *imagesrc,trmParam filterParam,bool *isAuto)
         cvErode( imgclone, imgclone , NULL , filterParam.erode );
     if (filterParam.dilate)
         cvDilate( imgclone, imgclone , NULL , filterParam.dilate );
-    imgclone = trmMosbat::doCanny( imgclone, filterParam.edge_1 ,filterParam.edge_2 );
+    imgclone = trmMark::doCanny( imgclone, filterParam.edge_1 ,filterParam.edge_2 );
 
     IplImage *autoimg = cvCloneImage(imgclone); //used for automode
 
     if (filterParam.bold)
-        trmMosbat::bold_filter(imgclone,filterParam.bold);
+        trmMark::bold_filter(imgclone,filterParam.bold);
     if (filterParam.narrow)
-        trmMosbat::narrowFilter(imgclone,filterParam.narrow);
+        trmMark::narrowFilter(imgclone,filterParam.narrow);
     if (filterParam.edge_corner)
     {
-        imgclone = trmMosbat::doCanny( imgclone, filterParam.edge_corner ,filterParam.edge_corner * 3);
+        imgclone = trmMark::doCanny( imgclone, filterParam.edge_corner ,filterParam.edge_corner * 3);
     }
 
 //    cvNamedWindow( "Example1", CV_WINDOW_AUTOSIZE );
@@ -520,7 +520,7 @@ trmMosbat *mosbatFromImage(IplImage *imagesrc,trmParam filterParam,bool *isAuto)
     cvFindContours(imgclone,cnt_storage,&firstContour,sizeof(CvContour),CV_RETR_TREE,CV_CHAIN_APPROX_SIMPLE);
     cvReleaseImage( &imgclone );
 
-    trmMosbat *plus_mark = create_from_seq(firstContour,filterParam.corner_min,filterParam.maximum_error);
+    trmMark *plus_mark = create_from_seq(firstContour,filterParam.corner_min,filterParam.maximum_error);
 
     int auto_bold  [TRM_AUTO_SIZE] = TRM_AUTO_BOLD;
     int auto_narrow[TRM_AUTO_SIZE] = TRM_AUTO_NARROW;
@@ -535,12 +535,12 @@ trmMosbat *mosbatFromImage(IplImage *imagesrc,trmParam filterParam,bool *isAuto)
         {
             IplImage *tempimg = cvCloneImage(autoimg); //used for automode
             if (auto_bold[i])
-                trmMosbat::bold_filter(tempimg,auto_bold[i]);
+                trmMark::bold_filter(tempimg,auto_bold[i]);
             if (auto_narrow[i])
-                trmMosbat::narrowFilter(tempimg,auto_narrow[i]);
+                trmMark::narrowFilter(tempimg,auto_narrow[i]);
             if (filterParam.edge_corner && auto_bold[i])
             {
-                tempimg = trmMosbat::doCanny( tempimg, filterParam.edge_corner ,filterParam.edge_corner * 3 );
+                tempimg = trmMark::doCanny( tempimg, filterParam.edge_corner ,filterParam.edge_corner * 3 );
             }
             cvFindContours(tempimg,cnt_storage,&firstContour,sizeof(CvContour),CV_RETR_TREE,CV_CHAIN_APPROX_SIMPLE);
             plus_mark = create_from_seq(firstContour,filterParam.corner_min , filterParam.maximum_error);
@@ -556,7 +556,7 @@ trmMosbat *mosbatFromImage(IplImage *imagesrc,trmParam filterParam,bool *isAuto)
 }
 
 //Note:this function release in
-IplImage* trmMosbat::doCanny( IplImage* in, double lowThresh, double highThresh )
+IplImage* trmMark::doCanny( IplImage* in, double lowThresh, double highThresh )
 {
     if(in->nChannels != 1)
     {
@@ -569,7 +569,7 @@ IplImage* trmMosbat::doCanny( IplImage* in, double lowThresh, double highThresh 
     return( out );
 }
 
-void trmMosbat::bold_filter(IplImage *in,int kernel_size)
+void trmMark::bold_filter(IplImage *in,int kernel_size)
 {
     cv::Mat grayFrame = cv::Mat(in);
     unsigned char imgdata[grayFrame.cols][grayFrame.rows];
@@ -596,7 +596,7 @@ void trmMosbat::bold_filter(IplImage *in,int kernel_size)
     }
 }
 
-void trmMosbat::narrowFilter(IplImage *in,int kernel_size)
+void trmMark::narrowFilter(IplImage *in,int kernel_size)
 {
     cv::Mat grayFrame = cv::Mat(in);
     unsigned char imgdata[grayFrame.cols][grayFrame.rows];

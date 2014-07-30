@@ -1,5 +1,5 @@
-#ifndef TRMMOSBAT_H
-#define TRMMOSBAT_H
+#ifndef TRMMARK_H
+#define TRMMARK_H
 
 #include <QtWidgets>
 #include <cv.h>
@@ -42,10 +42,10 @@ struct trm_param
 
 typedef trm_param trmParam;
 
-class trmMosbat
+class trmMark
 {
 public:
-    trmMosbat();
+    trmMark();
 	double findAngle();
     double findDerivative(CvPoint pt1, CvPoint pt2, CvPoint pt3, CvPoint pt4, bool reverse = false);
     CvPoint *getRect(); //return rectangle which contain plus
@@ -80,8 +80,8 @@ public:
     double   error;//RMS Error
 
 };
-trmMosbat *mosbatFromImage(IplImage *imagesrc, trmParam data, bool *isAuto);
-trmMosbat *create_from_point(CvSeq *points,double previous);
-trmMosbat *create_from_seq(CvSeq *head, double cornerMin, double treshold = -1 );
+trmMark *markFromImage(IplImage *imagesrc, trmParam data, bool *isAuto);
+trmMark *create_from_point(CvSeq *points,double previous);
+trmMark *create_from_seq(CvSeq *head, double cornerMin, double treshold = -1 );
 
-#endif // TRMMOSBAT_H
+#endif // TRMMARK_H

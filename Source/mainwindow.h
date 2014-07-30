@@ -55,7 +55,7 @@ protected:
 
     void closeEvent(QCloseEvent *event)
     {
-        trmMosbat::Saveparam(filter_param,"settings.json");
+        trmMark::Saveparam(filter_param,"settings.json");
     }
 
 private slots:

@@ -138,7 +138,7 @@ void MainWindow::updatePrev()
     }
 
     bool isAuto = false;
-    trmMosbat *plus_obj = mosbatFromImage(imagesrc,filter_param,&isAuto) ;
+    trmMark *plus_obj = markFromImage(imagesrc,filter_param,&isAuto) ;
     if (plus_obj != NULL)
     {
         cvSetImageROI(imagesrc, plus_obj->getRegion());
@@ -180,7 +180,7 @@ void MainWindow::open_clicked()
         capture = cvCreateFileCapture( filter_param.filename.toLocal8Bit().data() );
         if (capture == NULL)
             return;
-        trmMosbat::Saveparam(filter_param,"settings.json");
+        trmMark::Saveparam(filter_param,"settings.json");
         slider2->setMaximum((int) cvGetCaptureProperty( capture, CV_CAP_PROP_FRAME_COUNT ));
         slider1->setMaximum((int) cvGetCaptureProperty( capture, CV_CAP_PROP_FRAME_COUNT ));
         videoLoaded = true;
@@ -353,7 +353,7 @@ void MainWindow::CreateLayout()
     main_layout->addLayout(button_layout);
     //Side object
     NA_image = cvLoadImage("../Resources/NA.jpg");
-    filter_param = trmMosbat::Loadparam("settings.json");
+    filter_param = trmMark::Loadparam("settings.json");
     videoLoaded = false;
     //Window
     Main_Widget->setLayout(main_layout);
@@ -384,7 +384,7 @@ trmData *createTrmdata(CvCapture *capture,trmParam param,int startFrame,int endF
         {
             return NULL;
         }
-        trmMosbat *plus_obj = mosbatFromImage(imagesrc,param,NULL) ;
+        trmMark *plus_obj = markFromImage(imagesrc,param,NULL) ;
         if (plus_obj != NULL)
         {
             temp = new trmData;

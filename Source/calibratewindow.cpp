@@ -188,12 +188,12 @@ void CalibrateWindow::state_change(int changed)
 		{
 			if ( treshold_3 != 0 || treshold_4 != 0 )
 			{
-                imgout = trmMosbat::doCanny( imgout, treshold_1 ,treshold_2 );
+                imgout = trmMark::doCanny( imgout, treshold_1 ,treshold_2 );
 				imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
 			}
 			else
             {
-                imgout = trmMosbat::doCanny( cvCloneImage(image), treshold_1 ,treshold_2 );
+                imgout = trmMark::doCanny( cvCloneImage(image), treshold_1 ,treshold_2 );
 				imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
 			}
 		}
@@ -212,15 +212,15 @@ void CalibrateWindow::state_change(int changed)
 		imgout = cvCloneImage(image);
 		if (treshold_1 != 0 && treshold_1 < 15)
 		{
-			trmMosbat::bold_filter(imgout,treshold_1);
+            trmMark::bold_filter(imgout,treshold_1);
 		}
 		if (treshold_2 != 0 && treshold_2 < 15)
 		{
-			trmMosbat::narrowFilter(imgout,treshold_2);
+            trmMark::narrowFilter(imgout,treshold_2);
 		}
 		if (chk1->isChecked())
 		{
-            imgout = trmMosbat::doCanny( imgout, 20 ,60);
+            imgout = trmMark::doCanny( imgout, 20 ,60);
 		}
 		IplImage *imgclone = cvCloneImage(imgout);
 		CvSeq* firstContour = NULL;
@@ -280,62 +280,18 @@ void CalibrateWindow::state_change(int changed)
 		}
 		else
 		{
-			IplImage *imgclone = cvCreateImage( cvGetSize(imagesrc), 8, 1 );
-			cvCvtColor( imagesrc, imgclone, CV_BGR2GRAY );
-			if (filter_param.erode)
-				cvErode( imgclone, imgclone , NULL , filter_param.erode );
-			if (filter_param.dilate)
-				cvDilate( imgclone, imgclone , NULL , filter_param.dilate );
-            imgclone = trmMosbat::doCanny( imgclone, filter_param.edge_1 ,filter_param.edge_2 );
-
-            IplImage *autoimg = cvCloneImage(imgclone); //used for automode
-
-			if (filter_param.bold)
-				trmMosbat::bold_filter(imgclone,filter_param.bold);
-			if (filter_param.narrow)
-				trmMosbat::narrowFilter(imgclone,filter_param.narrow);
-			if (filter_param.edge_corner)
-            {
-                imgclone = trmMosbat::doCanny( imgclone, 5 ,5 * 3 );
-            }
-			bool isAuto = false;
-
-			CvSeq* firstContour = NULL;
-			CvMemStorage* cnt_storage = cvCreateMemStorage();
-			cvFindContours(imgclone,cnt_storage,&firstContour,sizeof(CvContour),CV_RETR_TREE,CV_CHAIN_APPROX_SIMPLE);
-            cvReleaseImage( &imgclone );
-
             if (!chk1->isChecked())
                 treshold_1 = -1;
 
-            trmMosbat *plus = create_from_seq(firstContour,filter_param.corner_min,treshold_1);
+            bool isAuto;
+            int temp_error = filter_param.maximum_error;
+            filter_param.maximum_error = treshold_1;
+            trmMark *plus = markFromImage(imagesrc,filter_param,&isAuto);
+            filter_param.maximum_error = temp_error;
 			imgout = cvCloneImage(imagesrc);
 			cv::RNG rng(1234);
             CvScalar color = cvScalar(rng.uniform(0,255), rng.uniform(0, 255), rng.uniform(0, 255));
 
-            int auto_bold  [TRM_AUTO_SIZE] = TRM_AUTO_BOLD;
-            int auto_narrow[TRM_AUTO_SIZE] = TRM_AUTO_NARROW;
-            if (plus == NULL )
-			{
-                isAuto = true;
-                for (int i = 0 ; i < TRM_AUTO_SIZE ; i++)
-				{
-                    IplImage *tempimg = cvCloneImage(autoimg); //used for automode
-                    if (auto_bold[i])
-                        trmMosbat::bold_filter(tempimg,auto_bold[i]);
-                    if (auto_narrow[i])
-                        trmMosbat::narrowFilter(tempimg,auto_narrow[i]);
-                    if (filter_param.edge_corner && auto_bold[i])
-					{
-                        tempimg = trmMosbat::doCanny( tempimg, 5 ,5 * 3 );
-					}
-                    cvFindContours(tempimg,cnt_storage,&firstContour,sizeof(CvContour),CV_RETR_TREE,CV_CHAIN_APPROX_SIMPLE);
-                    plus = create_from_seq(firstContour,filter_param.corner_min , treshold_1);
-                    cvReleaseImage(&tempimg);
-					if ( plus != NULL )
-						break;
-				}
-			}
 			if (plus != NULL)
 			{
 				cv::Mat mat_temp = imgout;
@@ -349,8 +305,14 @@ void CalibrateWindow::state_change(int changed)
 				//drawMark( mat_temp, plus->middle, cvScalar(0) );
                 if (isAuto)
                 {
-                    cv::putText(mat_temp,"Auto",cvPoint(20,20),1,1,cvScalar(0,0,255));
+                    cv::putText(mat_temp,"Auto",cvPoint(30,30),1,2,cvScalar(0,0,255),2);
                 }
+
+                char data_cache[50];
+                sprintf(data_cache , "Erorr: %d" ,cvRound(plus->error));
+                cv::putText(mat_temp,data_cache,cvPoint(30,imgout->height - 15),1,1.5,cvScalar(255,255,255),2);
+                sprintf(data_cache , "Angle: %0.3f" ,90 - plus->findAngle());
+                cv::putText(mat_temp,data_cache,cvPoint(30,imgout->height - 50),1,1.5,cvScalar(255,255,255),2);
 				delete plus;
 			}
 			vslider1_label->setText(QString("value = %1").arg(count));
@@ -607,7 +569,7 @@ void CalibrateWindow::back_clicked()
 		if (filter_param.dilate)
             cvDilate( image, image , NULL , filter_param.dilate );
 
-        image = trmMosbat::doCanny( image, filter_param.edge_1 ,filter_param.edge_2);
+        image = trmMark::doCanny( image, filter_param.edge_1 ,filter_param.edge_2);
 
 		calibrate_state = TRM_STATE_CORNER;
 
@@ -699,7 +661,7 @@ void CalibrateWindow::next_clicked()
             filter_param.maximum_error = treshold_1;
         else
             filter_param.maximum_error = -1;
-		trmMosbat::Saveparam(filter_param,"settings.json");
+        trmMark::Saveparam(filter_param,"settings.json");
 		close();
 	}
 
@@ -897,7 +859,7 @@ void CalibrateWindow::CreateLayout(QWidget *parent)
 	main_layout->addLayout(button_layout);
 	//Side object
 	//file_name = "/home/bijan/Downloads/IMG_20140630_213804.jpg";
-	filter_param = trmMosbat::Loadparam("settings.json");
+    filter_param = trmMark::Loadparam("settings.json");
 	//default
 	treshold_1 = 0;
 	treshold_2 = 0;

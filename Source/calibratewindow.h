@@ -5,7 +5,7 @@
 #include <opencv/highgui.h>
 #include <QtWidgets>
 #include <cv.h>
-#include <trmmosbat.h>
+#include <trmmark.h>
 
 #define TRM_STATE_FRAME     0
 #define TRM_STATE_EDGE      1
