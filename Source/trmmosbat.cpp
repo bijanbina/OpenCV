@@ -191,7 +191,10 @@ trmMosbat *create_from_point(CvSeq *points,double previous)
     obj->rect = (CvPoint *)malloc( 4 * sizeof (CvPoint));
     obj->edge = (obj->dist_cv(obj->top2,obj->center2) + obj->dist_cv(obj->right1,obj->center2) + obj->dist_cv(obj->right2,obj->center3) +
                  obj->dist_cv(obj->down2,obj->center3) + obj->dist_cv(obj->down1,obj->center4) + obj->dist_cv(obj->left2,obj->center4)
-                 + obj->dist_cv(obj->left1,obj->center1))/7.0;
+                 + obj->dist_cv(obj->left1,obj->center1)) / 7.0;
+
+    obj->inside_edge = ( obj->dist_cv(obj->center1,obj->center2) + obj->dist_cv(obj->center3,obj->center2) + obj->dist_cv(obj->center4,obj->center3) +
+                 obj->dist_cv(obj->center1,obj->center4) ) / 4.0;
 
     obj->rect[0] = cvPoint(0,0);
     obj->rect[1] = cvPoint(0,0);
@@ -203,7 +206,68 @@ trmMosbat *create_from_point(CvSeq *points,double previous)
     {
         return NULL;
     }
+
+    //calculate RMS Error
+    obj->error += cv::pow( obj->inside_edge - obj->dist_cv(obj->center1,obj->center4), 2 );
+    obj->error += cv::pow( obj->inside_edge - obj->dist_cv(obj->center1,obj->center2), 2 );
+    obj->error += cv::pow( obj->inside_edge - obj->dist_cv(obj->center3,obj->center2), 2 );
+    obj->error += cv::pow( obj->inside_edge - obj->dist_cv(obj->center3,obj->center4), 2 );
+    obj->error += cv::pow( obj->edge - obj->dist_cv(obj->top2,obj->center2), 2 );
+    obj->error += cv::pow( obj->edge - obj->dist_cv(obj->right1,obj->center2), 2 );
+    obj->error += cv::pow( obj->edge - obj->dist_cv(obj->right2,obj->center3), 2 );
+    obj->error += cv::pow( obj->edge - obj->dist_cv(obj->down2,obj->center3), 2 );
+    obj->error += cv::pow( obj->edge - obj->dist_cv(obj->down1,obj->center4), 2 );
+    obj->error += cv::pow( obj->edge - obj->dist_cv(obj->left2,obj->center4), 2 );
+    obj->error += cv::pow( obj->edge - obj->dist_cv(obj->left1,obj->center1), 2 );
+    obj->error = obj->error / 11.0;
+    obj->error = cv::sqrt(obj->error);
+
     return obj;
+}
+
+
+trmMosbat *create_from_seq(CvSeq *head,double cornerMin,double treshold)
+{
+    double minErorr = 9999;
+
+    CvSeq *dummy = head;
+    CvSeq *poly;
+
+    trmMosbat *temp,*result = NULL;
+
+    CvMemStorage* strg = cvCreateMemStorage();
+
+    while( dummy != NULL )
+    {
+        poly = cvApproxPoly(dummy,sizeof(CvContour),strg, CV_POLY_APPROX_DP,cornerMin);
+        if (poly->total == 12)
+        {
+            temp = create_from_point(poly,0);
+            if (temp != NULL)
+            {
+                if ( temp->error < minErorr )
+                {
+                    minErorr = temp->error;
+                    if (result != NULL)
+                        delete result;
+                    result = temp;
+                }
+                else
+                    delete temp;
+            }
+        }
+        dummy = dummy->h_next;
+    }
+    cvClearMemStorage(strg);
+    cvReleaseMemStorage(&strg);
+
+    if (result != NULL)
+    {
+        if ( treshold > 0 && treshold < result->error)
+            return NULL;
+    }
+
+    return result;
 }
 
 trmMosbat::trmMosbat()
@@ -329,6 +393,18 @@ double trmMosbat::findDerivative(CvPoint pt1, CvPoint pt2, CvPoint pt3, CvPoint 
     return slope;
 }
 
+QString trmMosbat::QStr_create(std::string buffer)
+{
+    QString return_data;
+    int len = strlen(buffer.c_str());
+    char *buffer2 = (char *)malloc(len + 1);
+    strncpy(buffer2, buffer.c_str(), len);
+    buffer2[len] = '\0';   /* null character manually added */
+    return_data = buffer2;
+    free(buffer2);
+    return return_data;
+}
+
 trmParam trmMosbat::Loadparam(char *filename)
 {
     trmParam return_data;
@@ -343,16 +419,14 @@ trmParam trmMosbat::Loadparam(char *filename)
             return_data.erode = json_obj.get("Erode",1).asInt();
             return_data.dilate = json_obj.get("Dilate",1).asInt();
             return_data.narrow = json_obj.get("Narrow",1).asInt();
-            return_data.edge_corner = json_obj.get("Edge Corner Detection",1).asInt();
+            return_data.maximum_error = json_obj.get("Maximum RMS Error",-1).asInt();
+            return_data.edge_corner = json_obj.get("Do canny after bold",true).asBool();
             return_data.calibre_width = json_obj.get("Calibre Image Width",calib_prev_size).asInt();
             return_data.morph_algorithm = json_obj.get("Morphology Algorithm",MORPH_STATE_NORMALL).asInt();
             return_data.frame_num = json_obj.get("Start Frame Number",0).asInt();
             return_data.isVideo = json_obj.get("Is Video",false).asBool();
-            std::string buffer = json_obj.get("File Address","../Resources/Test.jpg").asString();
-            int len = strlen(buffer.c_str());
-            char *buffer2 = (char *)malloc(len);
-            strncpy(buffer2, buffer.c_str(), len);
-            return_data.filename = buffer2;
+            return_data.filename = QStr_create(json_obj.get("File Address","../Resources/Test.jpg").asString());
+
 
             const Json::Value edge = json_obj["Edge Detection"];
             if (!edge.empty())
@@ -368,7 +442,6 @@ trmParam trmMosbat::Loadparam(char *filename)
     {
         return_data.bold = 1;
         return_data.narrow = 0;
-        return_data.edge_corner = 5;
         return_data.erode = 12;
         return_data.dilate = 12;
         return_data.edge_1 = 383;
@@ -376,6 +449,7 @@ trmParam trmMosbat::Loadparam(char *filename)
         return_data.corner_min = 11;
         return_data.filename = "../Resources/Test.jpg";
         return_data.isVideo = false;
+        return_data.edge_corner = true;
         return_data.frame_num = 0;
         return_data.calibre_width = calib_prev_size;
     }
@@ -392,7 +466,7 @@ void trmMosbat::Saveparam(trmParam data,char *filename)
     json_main["Dilate"] = data.dilate;
     json_main["Bold"] = data.bold;
     json_main["Narrow"] = data.narrow;
-    json_main["Edge Corner Detection"] = data.edge_corner;
+    json_main["Do canny after bold"] = data.edge_corner;
     json_main["Bold"] = data.bold;
     json_main["Corner Minimum Distance"] = data.corner_min;
     json_main["File Address"] = data.filename.toUtf8().data();
@@ -401,6 +475,7 @@ void trmMosbat::Saveparam(trmParam data,char *filename)
     json_main["Is Video"] = data.isVideo;
     json_main["Calibre Image Width"] = data.calibre_width;
     json_main["Morphology Algorithm"] = data.morph_algorithm;
+    json_main["Maximum RMS Error"] = data.maximum_error;
 
     // write in a nice readible way
     Json::StyledWriter styledWriter;
@@ -414,7 +489,7 @@ void trmMosbat::Saveparam(trmParam data,char *filename)
     file.close();
 }
 
-trmMosbat *mosbatFromImage(IplImage *imagesrc,trmParam filterParam)
+trmMosbat *mosbatFromImage(IplImage *imagesrc,trmParam filterParam,bool *isAuto)
 {
     IplImage *imgclone = cvCreateImage( cvGetSize(imagesrc), 8, 1 );
     cvCvtColor( imagesrc, imgclone, CV_BGR2GRAY );
@@ -422,18 +497,17 @@ trmMosbat *mosbatFromImage(IplImage *imagesrc,trmParam filterParam)
         cvErode( imgclone, imgclone , NULL , filterParam.erode );
     if (filterParam.dilate)
         cvDilate( imgclone, imgclone , NULL , filterParam.dilate );
-    IplImage *buffer = imgclone;
-    imgclone = trmMosbat::doCanny( imgclone, filterParam.edge_1 ,filterParam.edge_2, 3 );
-    cvReleaseImage( &buffer );
+    imgclone = trmMosbat::doCanny( imgclone, filterParam.edge_1 ,filterParam.edge_2 );
+
+    IplImage *autoimg = cvCloneImage(imgclone); //used for automode
+
     if (filterParam.bold)
         trmMosbat::bold_filter(imgclone,filterParam.bold);
     if (filterParam.narrow)
         trmMosbat::narrowFilter(imgclone,filterParam.narrow);
     if (filterParam.edge_corner)
     {
-        buffer = imgclone;
-        imgclone = trmMosbat::doCanny( imgclone, filterParam.edge_corner ,filterParam.edge_corner * 3, 3 );
-        cvReleaseImage( &buffer );
+        imgclone = trmMosbat::doCanny( imgclone, filterParam.edge_corner ,filterParam.edge_corner * 3);
     }
 
 //    cvNamedWindow( "Example1", CV_WINDOW_AUTOSIZE );
@@ -445,42 +519,44 @@ trmMosbat *mosbatFromImage(IplImage *imagesrc,trmParam filterParam)
     CvMemStorage* cnt_storage = cvCreateMemStorage();
     cvFindContours(imgclone,cnt_storage,&firstContour,sizeof(CvContour),CV_RETR_TREE,CV_CHAIN_APPROX_SIMPLE);
     cvReleaseImage( &imgclone );
-    CvMemStorage* poly_storage = cvCreateMemStorage();
-    CvSeq *dummy_seq = firstContour;
-    CvSeq *poly = NULL;
-    trmMosbat *plus_mark = NULL;
-    IplImage *imgout = cvCloneImage(imagesrc);
-    while( dummy_seq != NULL )
-    {
-        poly = cvApproxPoly(dummy_seq,sizeof(CvContour),poly_storage, CV_POLY_APPROX_DP,filterParam.corner_min);
-        if (poly->total == 12)
-        {
-            plus_mark = create_from_point(poly,0);
-            //crop
-            if (plus_mark != NULL)
-            {
-                cvSetImageROI(imgout, plus_mark->getRegion());
-                IplImage *buffer = cvCreateImage(cvGetSize(imgout), imgout->depth, imgout->nChannels);
-                cvCopy(imgout, buffer, NULL);
-                cvResetImageROI(imgout);
-                imgout = cvCloneImage(buffer);
 
-                cvReleaseImage( &buffer );
-                break;
+    trmMosbat *plus_mark = create_from_seq(firstContour,filterParam.corner_min,filterParam.maximum_error);
+
+    int auto_bold  [TRM_AUTO_SIZE] = TRM_AUTO_BOLD;
+    int auto_narrow[TRM_AUTO_SIZE] = TRM_AUTO_NARROW;
+
+    if (isAuto != NULL)
+        (*isAuto) = false;
+    if (plus_mark == NULL )
+    {
+        if (isAuto != NULL)
+            (*isAuto) = true;
+        for (int i = 0 ; i < TRM_AUTO_SIZE ; i++)
+        {
+            IplImage *tempimg = cvCloneImage(autoimg); //used for automode
+            if (auto_bold[i])
+                trmMosbat::bold_filter(tempimg,auto_bold[i]);
+            if (auto_narrow[i])
+                trmMosbat::narrowFilter(tempimg,auto_narrow[i]);
+            if (filterParam.edge_corner && auto_bold[i])
+            {
+                tempimg = trmMosbat::doCanny( tempimg, filterParam.edge_corner ,filterParam.edge_corner * 3 );
             }
+            cvFindContours(tempimg,cnt_storage,&firstContour,sizeof(CvContour),CV_RETR_TREE,CV_CHAIN_APPROX_SIMPLE);
+            plus_mark = create_from_seq(firstContour,filterParam.corner_min , filterParam.maximum_error);
+            cvReleaseImage(&tempimg);
+            if ( plus_mark != NULL )
+                break;
         }
-        dummy_seq = dummy_seq->h_next;
     }
-    cvClearMemStorage(poly_storage);
-    cvReleaseMemStorage(&poly_storage);
+
     cvClearMemStorage(cnt_storage);
     cvReleaseMemStorage(&cnt_storage);
-    cvReleaseImage( &imgout );
     return plus_mark;
 }
 
-
-IplImage* trmMosbat::doCanny( IplImage* in, double lowThresh, double highThresh, double aperture )
+//Note:this function release in
+IplImage* trmMosbat::doCanny( IplImage* in, double lowThresh, double highThresh )
 {
     if(in->nChannels != 1)
     {
@@ -488,7 +564,8 @@ IplImage* trmMosbat::doCanny( IplImage* in, double lowThresh, double highThresh,
         exit(0); //Canny only handles gray scale images
     }
     IplImage *out = cvCreateImage( cvGetSize( in ) , IPL_DEPTH_8U, 1 );
-    cvCanny( in, out, lowThresh, highThresh, aperture );
+    cvCanny( in, out, lowThresh, highThresh, 3 );
+    cvReleaseImage( &in );
     return( out );
 }
 
@@ -511,8 +588,8 @@ void trmMosbat::bold_filter(IplImage *in,int kernel_size)
         {
             if (imgdata[x+kernel_size/2][y+kernel_size/2] == 255 )
             {
-                //cvRectangle(in,cvPoint(x,y),cvPoint(x+kernel_size,y+kernel_size),cvScalarAll(255));
-                cvCircle(in,cvPoint(x,y),kernel_size,cvScalarAll(255),kernel_size/2+1);
+                cvRectangle(in,cvPoint(x,y),cvPoint(x+kernel_size,y+kernel_size),cvScalarAll(255));
+                //cvCircle(in,cvPoint(x,y),kernel_size,cvScalarAll(255),kernel_size/2+1);
 
             }
         }
@@ -538,8 +615,8 @@ void trmMosbat::narrowFilter(IplImage *in,int kernel_size)
         {
             if (imgdata[x+kernel_size/2][y+kernel_size/2] == 0 )
             {
-                //cvRectangle(in,cvPoint(x,y),cvPoint(x+kernel_size,y+kernel_size),cvScalarAll(0));
-                cvCircle(in,cvPoint(x,y),kernel_size,cvScalarAll(0),kernel_size/2+1);
+                cvRectangle(in,cvPoint(x,y),cvPoint(x+kernel_size,y+kernel_size),cvScalarAll(0));
+                //cvCircle(in,cvPoint(x,y),kernel_size,cvScalarAll(0),kernel_size/2+1);
 
             }
         }

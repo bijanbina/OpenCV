@@ -18,6 +18,10 @@
 #define MORPH_STATE_OPEN        2
 #define MORPH_STATE_CLOSE       3
 
+#define TRM_AUTO_SIZE   4
+#define TRM_AUTO_BOLD   { 0 , 1 , 2 , 1 }
+#define TRM_AUTO_NARROW { 0 , 0 , 0 , 1 }
+
 struct trm_param
 {
     double edge_1;
@@ -26,12 +30,13 @@ struct trm_param
     int dilate;
     int bold;
     int narrow;
-    int edge_corner;
+    bool edge_corner;
     int corner_min;
     int frame_num;
     bool isVideo;
     int calibre_width;
     int morph_algorithm;
+    int maximum_error;
     QString filename;
 };
 
@@ -47,9 +52,10 @@ public:
     CvRect   getRegion(); //return rectangle which contain plus
     static void bold_filter(IplImage *in,int kernel_size);
     static void narrowFilter(IplImage *in,int kernel_size);
-    static IplImage* doCanny( IplImage* in, double lowThresh, double highThresh, double aperture );
+    static IplImage* doCanny(IplImage* in, double lowThresh, double highThresh);
     double dist_cv(CvPoint pt1, CvPoint pt2);
 
+    static QString QStr_create(std::string buffer);
     static trmParam Loadparam(char *filename);
     static void Saveparam(trmParam data, char *filename);
 
@@ -68,10 +74,14 @@ public:
     CvPoint middle;
 
     CvPoint *rect;
-    double   edge;
+    double   edge; //mean value of marks side
+	double   inside_edge;
     double   pr;//previeos angle
+    double   error;//RMS Error
 
 };
-trmMosbat *mosbatFromImage(IplImage *imagesrc,trmParam data);
+trmMosbat *mosbatFromImage(IplImage *imagesrc, trmParam data, bool *isAuto);
 trmMosbat *create_from_point(CvSeq *points,double previous);
+trmMosbat *create_from_seq(CvSeq *head, double cornerMin, double treshold = -1 );
+
 #endif // TRMMOSBAT_H
