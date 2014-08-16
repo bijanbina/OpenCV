@@ -12,3 +12,11 @@ make -s
 Contribute
 ===================================================================
 git commit -a -m "Erode and Dilute added";git push -u origin master
+
+Required Package
+===================================================================
+1.Qt 5
+2.QWT with qt5 support
+3.json-cpp 
+4.v4l2
+5.OpenCV

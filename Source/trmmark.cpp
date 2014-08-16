@@ -415,43 +415,45 @@ trmParam trmMark::Loadparam(char *filename)
         Json::Reader reader;
         if (reader.parse(QString(json_file.readAll()).toUtf8().data(), json_obj))
         {
-            return_data.bold = json_obj.get("Bold",1).asInt();
-            return_data.erode = json_obj.get("Erode",1).asInt();
-            return_data.dilate = json_obj.get("Dilate",1).asInt();
-            return_data.narrow = json_obj.get("Narrow",1).asInt();
-            return_data.maximum_error = json_obj.get("Maximum RMS Error",-1).asInt();
+            return_data.bold = json_obj.get("Bold",2).asInt();
+            return_data.erode = json_obj.get("Erode",2).asInt();
+            return_data.dilate = json_obj.get("Dilate",2).asInt();
+            return_data.narrow = json_obj.get("Narrow",0).asInt();
+            return_data.maximum_error = json_obj.get("Maximum RMS Error",5).asInt();
             return_data.edge_corner = json_obj.get("Do canny after bold",true).asBool();
             return_data.calibre_width = json_obj.get("Calibre Image Width",calib_prev_size).asInt();
             return_data.morph_algorithm = json_obj.get("Morphology Algorithm",MORPH_STATE_NORMALL).asInt();
             return_data.frame_num = json_obj.get("Start Frame Number",0).asInt();
-            return_data.isVideo = json_obj.get("Is Video",false).asBool();
-            return_data.filename = QStr_create(json_obj.get("File Address","../Resources/Test.jpg").asString());
+            return_data.isVideo = json_obj.get("Is Video",true).asBool();
+            return_data.filename = QStr_create(json_obj.get("File Address","../Resources/Sample.mp4").asString());
 
 
             const Json::Value edge = json_obj["Edge Detection"];
             if (!edge.empty())
             {
-                return_data.edge_1 = edge.get("Treshold 1",99).asDouble();
-                return_data.edge_2 = edge.get("Treshold 2",33).asDouble();
+                return_data.edge_1 = edge.get("Treshold 1",214).asDouble();
+                return_data.edge_2 = edge.get("Treshold 2",71).asDouble();
             }
-            return_data.corner_min = json_obj.get("Corner Minimum Distance",0).asInt();
+            return_data.corner_min = json_obj.get("Corner Minimum Distance",25).asInt();
         }
 
     }
     else
     {
-        return_data.bold = 1;
+        return_data.bold = 2;
         return_data.narrow = 0;
-        return_data.erode = 12;
-        return_data.dilate = 12;
-        return_data.edge_1 = 383;
-        return_data.edge_2 = 127;
-        return_data.corner_min = 11;
-        return_data.filename = "../Resources/Test.jpg";
-        return_data.isVideo = false;
+        return_data.erode = 2;
+        return_data.dilate = 2;
+        return_data.edge_1 = 214;
+        return_data.edge_2 = 71;
+        return_data.corner_min = 25;
+        return_data.filename = "../Resources/Sample.mp4";
+        return_data.isVideo = true;
         return_data.edge_corner = true;
         return_data.frame_num = 0;
         return_data.calibre_width = calib_prev_size;
+        return_data.morph_algorithm = MORPH_STATE_NORMALL;
+
     }
     return return_data;
 }
@@ -543,7 +545,10 @@ trmMark *markFromImage(IplImage *imagesrc,trmParam filterParam,bool *isAuto)
             cvFindContours(tempimg,cnt_storage,&firstContour,sizeof(CvContour),CV_RETR_TREE,CV_CHAIN_APPROX_SIMPLE);
             plus_mark = create_from_seq(firstContour,filterParam.corner_min , filterParam.maximum_error);
             if ( plus_mark != NULL )
+			{
+            	cvReleaseImage(&tempimg);
                 break;
+			}
             tempimg = trmMark::doCanny( tempimg, filterParam.edge_corner ,filterParam.edge_corner * 3 );//Do canny after bold filter
             cvFindContours(tempimg,cnt_storage,&firstContour,sizeof(CvContour),CV_RETR_TREE,CV_CHAIN_APPROX_SIMPLE);
             plus_mark = create_from_seq(firstContour,filterParam.corner_min , filterParam.maximum_error);
@@ -557,6 +562,7 @@ trmMark *markFromImage(IplImage *imagesrc,trmParam filterParam,bool *isAuto)
     {
         cvClearMemStorage(cnt_storage);
 
+        cvReleaseImage( &autoimg );
         autoimg = cvCreateImage( cvGetSize(imagesrc), 8, 1 );
         cvCvtColor( imagesrc, autoimg, CV_BGR2GRAY );
         cvErode( autoimg, autoimg , NULL , 25 );
@@ -575,7 +581,10 @@ trmMark *markFromImage(IplImage *imagesrc,trmParam filterParam,bool *isAuto)
             cvFindContours(tempimg,cnt_storage,&firstContour,sizeof(CvContour),CV_RETR_TREE,CV_CHAIN_APPROX_SIMPLE);
             plus_mark = create_from_seq(firstContour,filterParam.corner_min , filterParam.maximum_error);
             if ( plus_mark != NULL )
+			{
+            	cvReleaseImage(&tempimg);
                 break;
+			}
             tempimg = trmMark::doCanny( tempimg, filterParam.edge_corner ,filterParam.edge_corner * 3 );//Do canny after bold filter
             cvFindContours(tempimg,cnt_storage,&firstContour,sizeof(CvContour),CV_RETR_TREE,CV_CHAIN_APPROX_SIMPLE);
             plus_mark = create_from_seq(firstContour,filterParam.corner_min , filterParam.maximum_error);
@@ -583,10 +592,13 @@ trmMark *markFromImage(IplImage *imagesrc,trmParam filterParam,bool *isAuto)
             if ( plus_mark != NULL )
                 break;
         }
+		cvReleaseImage( &autoimg );
     }
 
     cvClearMemStorage(cnt_storage);
     cvReleaseMemStorage(&cnt_storage);
+    
+	cvReleaseImage( &autoimg );
     return plus_mark;
 }
 

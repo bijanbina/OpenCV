@@ -21,6 +21,7 @@
 #include <qwt_plot_spectrogram.h>
 #include <qwt_text_label.h>
 #include <iostream>
+#include "trmv4l2.h"
 
 #define prev_size 200.0
 
@@ -60,6 +61,7 @@ protected:
 
 private slots:
     void open_clicked();
+    void open_camera();
     void calibrate_clicked();
     void analysis_clicked();
     void save_clicked();
@@ -84,6 +86,7 @@ private:
 	QMenu			*option_menu;
 	QMenu			*help_menu;
 	QAction			*a_open;
+    QAction			*a_cam;
 	QAction			*a_save;
 	QAction			*a_exit;
 	QAction			*a_calibrate;

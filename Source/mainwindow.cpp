@@ -7,6 +7,7 @@ MainWindow::MainWindow(QWidget *parent) :
 		
 	//Actions
     connect(a_open, SIGNAL(triggered(bool)),this,SLOT(open_clicked()));
+    connect(a_cam, SIGNAL(triggered(bool)),this,SLOT(open_camera()));
     connect(a_save, SIGNAL(triggered(bool)),this,SLOT(save_clicked()));
     connect(a_exit, SIGNAL(triggered(bool)),this,SLOT(exit_clicked()));
     connect(slider1,SIGNAL(valueChanged(int)), this, SLOT(slider1_change(int)));
@@ -23,6 +24,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow()
 {
+
 }
 
 //Open image function call
@@ -72,12 +74,16 @@ void MainWindow::analysis_clicked()
 {
     int frameNumber = 0;
     frameNumber = filter_param.frame_num;
-    trmData *head,*ptr;
+    trmData *head,*ptr,*ptr_prev;
     int size = 0;
     if (videoLoaded)
     {
         head = createTrmdata(capture,filter_param,treshold_1,treshold_2,progress,&size);
         std::cout << size << std::endl;
+//        double X[size];
+//        double Y[size];
+//        double T[size];
+//        double V[size];
         QVector< double > X(size);
         QVector< double > Y(size);
         QVector< double > T(size);
@@ -96,7 +102,9 @@ void MainWindow::analysis_clicked()
                 V[i] = cvSqrt((X[i] - last_x) * (X[i] - last_x) + (Y[i] - last_y) * (Y[i] - last_y) );
             last_x = X[i];
             last_y = Y[i];
+			ptr_prev = ptr;
             ptr = ptr->next;
+			delete ptr_prev;
         }
 
         xy_curve->setSamples(X,Y);
@@ -118,6 +126,11 @@ void MainWindow::analysis_clicked()
         vt_plot->update();
         vt_zoomer->zoomBase();
         vt_plot->replot();
+
+        X.clear();
+        Y.clear();
+        T.clear();
+        V.clear();
 
         progress->setValue(0);
     }
@@ -211,6 +224,29 @@ void MainWindow::open_clicked()
 
 }
 
+void MainWindow::open_camera()
+{
+    QStringList cam_list = getDeviceName();
+    QString DeviceName = QInputDialog::getItem(this,"Select Camera","Camera",cam_list);
+    DeviceName = "/dev/" + DeviceName;
+    DeviceName.toLocal8Bit().data();
+    std::cout << DeviceName.toLocal8Bit().data() << std::endl;
+    int fd = open(DeviceName.toLocal8Bit().data(), O_RDWR);
+    //std::cout << fd << "\t" << EACCES << std::endl;
+    if ( fd < 0)
+    {
+        std::cout << "Cannot open camera" << std::endl;
+        return;
+    }
+    struct v4l2_input input;
+    memset(&input, 0, sizeof(input));
+    ioctl(fd, VIDIOC_G_INPUT, &(input.index)); //get index (Normally is 0)
+    ioctl(fd, VIDIOC_ENUMINPUT, &input);
+    std::cout << "Current input: " << input.index << std::endl;
+    ::close(fd);
+
+}
+
 void MainWindow::CreateMenu()
 {
     menu = new QMenuBar (this);
@@ -218,6 +254,7 @@ void MainWindow::CreateMenu()
 
 	file_menu = menu->addMenu("File");
 	a_open = file_menu->addAction("Open");
+    a_cam  = file_menu->addAction("Open Camera");
 	a_save = file_menu->addAction("Save");
 	a_exit = file_menu->addAction("Exit");
 
@@ -290,7 +327,7 @@ void MainWindow::CreateLayout()
     title.setFont(font);
 
     QwtSymbol *symbol = new QwtSymbol( QwtSymbol::Ellipse,
-    QBrush( Qt::yellow ), QPen( Qt::red , 2 ), QSize( 2, 2 ) );
+    QBrush( Qt::yellow ), QPen( Qt::red , 1 ), QSize( 1, 1 ) );
 
     //XY
     xy_grid = new QwtPlotGrid();
@@ -416,14 +453,14 @@ trmData *createTrmdata(CvCapture *capture,trmParam param,int startFrame,int endF
     {
         IplImage *imagesrc;
         if (capture == NULL)
-            return NULL;
+            break;
         cvSetCaptureProperty(capture,CV_CAP_PROP_POS_FRAMES,frameNumber);
         if (!cvGrabFrame( capture ))
-            return NULL;
+            break;
         imagesrc = cvQueryFrame( capture );
         if (imagesrc == NULL)
         {
-            return NULL;
+            break;
         }
         trmMark *plus_obj = markFromImage(imagesrc,param,NULL) ;
         if (plus_obj != NULL)

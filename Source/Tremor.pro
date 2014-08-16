@@ -14,16 +14,18 @@ TARGET = Tremor
 SOURCES += main.cpp\
         mainwindow.cpp\
 	calibratewindow.cpp \
-    trmmark.cpp
+    trmmark.cpp \
+    trmv4l2.cpp
 
 HEADERS  += mainwindow.h\
 	calibratewindow.h \
-    trmmark.h
+    trmmark.h \
+    trmv4l2.h
 
 PKGCONFIG += opencv jsoncpp
 CONFIG += link_pkgconfig
 
-INCLUDEPATH      = /usr/include/qwt
+INCLUDEPATH      += /usr/include/qwt
 LIBS        += -lqwt -lm
 QMAKE_CXXFLAGS += -g
 #QMAKE_CXXFLAGS += -E
