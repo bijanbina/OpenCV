@@ -40,7 +40,6 @@ RecWindow::RecWindow(QWidget *parent) :
 
     connect(a_open, SIGNAL(triggered(bool)),this,SLOT(open_clicked()));
     filename = filter_param.filename;
-    isVideo = filter_param.input;
 
     setGeometry((qApp->desktop()->geometry().center() - rect().center()).x(),(qApp->desktop()->geometry().center() - rect().center()).y(),rect().width(),rect().height());
 }
@@ -89,7 +88,7 @@ void RecWindow::save_clicked()
 void RecWindow::rec_clicked()
 {
     pthread_cancel(thread_cam);
-    pthread_create( &thread_cam, NULL, camera_main, (void*) this);
+    pthread_create( &thread_cam, NULL, capture_main, (void*) this);
     return;
 }
 

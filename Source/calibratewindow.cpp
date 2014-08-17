@@ -29,7 +29,7 @@ CalibrateWindow::CalibrateWindow(QWidget *parent) :
 	connect(a_mnormal, SIGNAL(triggered(bool)),this,SLOT(mnormal_clicked(bool)));
 
 	filename = filter_param.filename;
-    isVideo = filter_param.input;
+	isVideo = filter_param.isVideo;
 	if (!isVideo)
 	{
 		imagesrc = cvLoadImage(filename.toLocal8Bit().data());
@@ -308,6 +308,16 @@ void CalibrateWindow::state_change(int changed)
                     cv::putText(mat_temp,"Auto",cvPoint(30,30),1,2,cvScalar(0,0,255),2);
                 }
 
+				if (chk2->isChecked())
+				{
+            			color = cvScalar(rng.uniform(0,255), rng.uniform(0, 255), rng.uniform(0, 255));
+						//find radius from inside edge --> *sqrt(2)/2
+						if ( treshold_2 < ( plus->inside_edge * cv::sqrt(2) / 2 ) )
+							cv::circle (mat_temp , plus->middle , ( plus->inside_edge * cv::sqrt(2) / 2 ) - treshold_2 , color , 6 , 1 );
+						else
+							cv::putText(mat_temp,"Error: CutOff is not right!",cvPoint(100,30),1,2,cvScalar(0,0,255),2);
+				}
+
                 char data_cache[50];
                 sprintf(data_cache , "Erorr: %d" ,cvRound(plus->error));
                 cv::putText(mat_temp,data_cache,cvPoint(30,imgout->height - 15),1,1.5,cvScalar(255,255,255),2);
@@ -320,9 +330,10 @@ void CalibrateWindow::state_change(int changed)
 			surface->setPixmap(QPixmap::fromImage(imageView.scaled(surface_width,surface_height,Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
 		}
         chk1->setText("Maximum Error");
-		chk2->setText("NULL");
+		chk2->setText("Maximum Accuracy");
 		slider1->setMaximum(100);
-		slider2->setEnabled(false);
+		slider2->setMaximum(50);
+		slider2->setEnabled(chk2->isChecked());
 		vslider1->setEnabled(false);
 		vslider2->setEnabled(false);
 	}

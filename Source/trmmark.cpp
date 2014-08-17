@@ -423,8 +423,9 @@ trmParam trmMark::Loadparam(char *filename)
             return_data.edge_corner = json_obj.get("Do canny after bold",true).asBool();
             return_data.calibre_width = json_obj.get("Calibre Image Width",calib_prev_size).asInt();
             return_data.morph_algorithm = json_obj.get("Morphology Algorithm",MORPH_STATE_NORMALL).asInt();
+            return_data.cutOff = json_obj.get("ROI CutOff",3).asInt();
             return_data.frame_num = json_obj.get("Start Frame Number",0).asInt();
-            return_data.input = json_obj.get("Input",TRM_INPUT_VIDEO).asInt();
+            return_data.isVideo = json_obj.get("Is Video",true).asBool();
             return_data.deviceID = json_obj.get("Device ID",-1).asInt();
             return_data.filename = QStr_create(json_obj.get("File Address","../Resources/Sample.mp4").asString());
 
@@ -449,7 +450,7 @@ trmParam trmMark::Loadparam(char *filename)
         return_data.edge_2 = 71;
         return_data.corner_min = 25;
         return_data.filename = "../Resources/Sample.mp4";
-        return_data.input = TRM_INPUT_VIDEO;
+        return_data.isVideo = true;
         return_data.edge_corner = true;
         return_data.frame_num = 0;
         return_data.deviceID = -1;
@@ -476,11 +477,12 @@ void trmMark::Saveparam(trmParam data,char *filename)
     json_main["File Address"] = data.filename.toUtf8().data();
     json_main["Start Frame Number"] = data.frame_num;
     json_main["Edge Detection"] = edge;
-    json_main["Input"] = data.input;
+    json_main["Is Video"] = data.isVideo;
     json_main["Device ID"] = data.deviceID;
     json_main["Calibre Image Width"] = data.calibre_width;
     json_main["Morphology Algorithm"] = data.morph_algorithm;
     json_main["Maximum RMS Error"] = data.maximum_error;
+    json_main["ROI CutOff"] = data.cutOff ;
 
     // write in a nice readible way
     Json::StyledWriter styledWriter;
