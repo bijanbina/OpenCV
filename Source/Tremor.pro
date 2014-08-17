@@ -15,17 +15,17 @@ SOURCES += main.cpp\
         mainwindow.cpp\
 	calibratewindow.cpp \
     trmmark.cpp \
-    trmv4l2.cpp
+    recwindow.cpp
 
 HEADERS  += mainwindow.h\
 	calibratewindow.h \
     trmmark.h \
-    trmv4l2.h
+    recwindow.h
 
 PKGCONFIG += opencv jsoncpp
 CONFIG += link_pkgconfig
 
 INCLUDEPATH      += /usr/include/qwt
-LIBS        += -lqwt -lm
+LIBS        += -lqwt -lm -lpthread
 QMAKE_CXXFLAGS += -g
 #QMAKE_CXXFLAGS += -E

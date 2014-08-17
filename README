@@ -20,3 +20,4 @@ Required Package
 3.json-cpp 
 4.v4l2
 5.OpenCV
+6.POSIX Thread

@@ -1,5 +1,5 @@
-#ifndef CALIBRATEWINDOW_H
-#define CALIBRATEWINDOW_H
+#ifndef RECWINDOW_H
+#define RECWINDOW_H
 
 #include <QMainWindow>
 #include <opencv/highgui.h>
@@ -12,12 +12,13 @@
 #define TRM_STATE_CORNER    2
 #define TRM_STATE_RESULT    3
 
-class CalibrateWindow : public QDialog {
+void *capture_main(void *data);
+
+class RecWindow : public QDialog {
     Q_OBJECT
 public:
-    explicit CalibrateWindow(QWidget *parent = 0);
-    ~CalibrateWindow();
-    trmParam start(int startFrame = 0);
+    explicit RecWindow(QWidget *parent = 0);
+    ~RecWindow();
 
 protected:
     char        *FileOpName; //declare FileOpName as IplImage
@@ -30,36 +31,20 @@ protected:
 private slots:
     void slider1_change(int);
     void slider2_change(int);
-    void slider3_change(int);
-    void slider4_change(int);
-    void chk1_change();
-    void chk2_change();
     void open_clicked();
-    void openimage_clicked();
     void save_clicked();
-    void replace_clicked();
-    void back_clicked();
-    void state_change(int changed = 0);
-    void next_clicked();
-    void width_clicked();
-    void equal_clicked(bool state);
-    void mreversed_clicked(bool state);
-    void mclose_clicked(bool state);
-    void mopen_clicked(bool state);
-    void mnormal_clicked(bool state);
-
+    void rec_clicked();
+    void exit_clicked();
+    void analysis_clicked();
 
 private:
-    void CreateLayout(QWidget *parent);
-    void CreateMenu();
-    void openImage();
-    void find_corner(IplImage* in ,double quality_level ,double min_distance ,int MAX_CORNERS , double k) ;
-    void drawMark(cv::Mat img , CvPoint pt, CvScalar) ;
-    void MyFilledCircle( cv::Mat img, cv::Point center );
+    void        CreateLayout(QWidget *parent);
+    void        CreateMenu();
+    QStringList getDeviceName();
 
     QLabel       *surface;
-	QCheckBox    *chk1;
-	QCheckBox    *chk2;
+    QCheckBox    *chk1;
+    QCheckBox    *chk2;
     QMenuBar     *menu;
     QMenu        *file_menu;
     QMenu		 *morphology_menu;
@@ -79,9 +64,9 @@ private:
     QAction		 *a_mclose;
     IplImage     *image;
     IplImage     *imgout;
-    IplImage     *imagesrc; 
+    IplImage     *imagesrc;
     CvCapture    *capture;
-	QImage        imageView;
+    QImage        imageView;
     QVBoxLayout  *main_layout;
     QHBoxLayout  *slider1_layout;
     QLabel       *slider1_label;
@@ -101,9 +86,10 @@ private:
     QHBoxLayout  *option_layout;
     QHBoxLayout  *chkbox_layout;
     QHBoxLayout  *button_layout;
-    QPushButton  *back_btn;
-    QPushButton  *next_btn;
-    QPushButton  *replace_btn;
+    QPushButton  *rec_btn;
+    QPushButton  *save_btn;
+    QPushButton  *analysis_btn;
+    QString       filename;
     double        treshold_1;
     double        treshold_2;
     double        treshold_3;
@@ -114,10 +100,11 @@ private:
     int           calibrate_state;
     int           morphology_state;
     double        surface_width;
-    QString       filename;
     bool          isVideo;
     trmParam      filter_param;
+    pthread_t       thread_cam;
+    int           camID;
 };
 
 
-#endif
+#endif // RECWINDOW_H

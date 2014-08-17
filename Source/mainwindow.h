@@ -22,6 +22,8 @@
 #include <qwt_text_label.h>
 #include <iostream>
 #include "trmv4l2.h"
+#include <sys/time.h>
+
 
 #define prev_size 200.0
 
@@ -50,6 +52,12 @@ public:
     }
 
 
+    CvCapture       *capture;
+    IplImage        *NA_image;
+    QLabel       	*preview;
+    QImage       	 imageView;
+    QSlider         *slider1;
+    QSlider         *slider2;
 protected:
     char        *FileOpName; //declare FileOpName as IplImage
     IplImage    *imagerd;    //declare imagerd as IplImage
@@ -76,7 +84,6 @@ private:
     void updatePrev();
     IplImage* doPyrDown( IplImage* in, int filter);
 
-    QLabel       	*preview;
     QGroupBox       *preview_group;
     QHBoxLayout     *preview_layout;
 	QCheckBox    	*chk1;
@@ -90,8 +97,7 @@ private:
 	QAction			*a_save;
 	QAction			*a_exit;
 	QAction			*a_calibrate;
-	QAction			*a_about;
-    QImage       	 imageView;
+    QAction			*a_about;
     QVBoxLayout  	*main_layout;
     QLabel       	*radial_label;
     QLabel       	*freq_label;
@@ -131,12 +137,9 @@ private:
     IplImage     	*image;
     QHBoxLayout     *slider1_layout;
     QLabel          *slider1_label;
-    QSlider         *slider1;
-    QSlider         *slider2;
     QHBoxLayout     *slider2_layout;
     QLabel          *slider2_label;
-    CvCapture       *capture;
-    IplImage        *NA_image;
+    pthread_t       thread_cam;
     char		 	*file_name;
     double           treshold_1;
     double           treshold_2;

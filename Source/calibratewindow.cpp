@@ -29,7 +29,7 @@ CalibrateWindow::CalibrateWindow(QWidget *parent) :
 	connect(a_mnormal, SIGNAL(triggered(bool)),this,SLOT(mnormal_clicked(bool)));
 
 	filename = filter_param.filename;
-	isVideo = filter_param.isVideo;
+    isVideo = filter_param.input;
 	if (!isVideo)
 	{
 		imagesrc = cvLoadImage(filename.toLocal8Bit().data());

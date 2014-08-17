@@ -18,6 +18,10 @@
 #define MORPH_STATE_OPEN        2
 #define MORPH_STATE_CLOSE       3
 
+#define TRM_INPUT_IMAGE 0
+#define TRM_INPUT_VIDEO 1
+#define TRM_INPUT_CAM   2
+
 #define TRM_AUTO_SIZE   4
 #define TRM_AUTO_BOLD   { 0 , 1 , 2 , 1 }
 #define TRM_AUTO_NARROW { 0 , 0 , 0 , 1 }
@@ -33,10 +37,11 @@ struct trm_param
     bool edge_corner;
     int corner_min;
     int frame_num;
-    bool isVideo;
+    int input;
     int calibre_width;
     int morph_algorithm;
     int maximum_error;
+    int deviceID;
     QString filename;
 };
 

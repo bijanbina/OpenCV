@@ -30,7 +30,7 @@ MainWindow::~MainWindow()
 //Open image function call
 void MainWindow::loadVideo()
 {
-    if (!filter_param.isVideo)
+    if (filter_param.input == TRM_INPUT_IMAGE)
     {
         imagerd = cvLoadImage(filter_param.filename.toLocal8Bit().data());
         slider1->setValue(0);
@@ -38,7 +38,7 @@ void MainWindow::loadVideo()
         slider1->setEnabled(false);
         slider2->setEnabled(false);
     }
-    else
+    else if (filter_param.input == TRM_INPUT_VIDEO)
     {
         capture = cvCreateFileCapture( filter_param.filename.toLocal8Bit().data() );
         if (capture == NULL)
@@ -51,6 +51,62 @@ void MainWindow::loadVideo()
         slider1->setValue(filter_param.frame_num);
         slider2->setValue(slider1->maximum()-1);
         videoLoaded = true;
+    }
+    else if (filter_param.input == TRM_INPUT_CAM)
+    {
+        QString DeviceName;
+        if (filter_param.deviceID == -1)
+        {
+            QStringList cam_list = getDeviceName();
+            if (cam_list.size() > 1)
+            {
+                DeviceName = QInputDialog::getItem(this,"Select Camera","Camera",cam_list);
+                DeviceName = DeviceName[DeviceName.size()-1];
+                filter_param.deviceID = DeviceName.toInt();
+            }
+            else if (cam_list.size() == 1)
+            {
+                DeviceName = cam_list[0];
+                DeviceName = DeviceName[DeviceName.size()-1];
+                filter_param.deviceID = DeviceName.toInt();
+            }
+            //else device id is unchanged
+        }
+        capture = cvCreateCameraCapture(filter_param.deviceID);
+        if (capture == NULL)
+        {
+            if (filter_param.deviceID != -1)
+            {
+                QStringList cam_list = getDeviceName();
+                if (cam_list.size() > 1)
+                {
+                    DeviceName = QInputDialog::getItem(this,"Select Camera","Camera",cam_list);
+                    DeviceName = DeviceName[DeviceName.size()-1];
+                    filter_param.deviceID = DeviceName.toInt();
+                }
+                else if (cam_list.size() == 1)
+                {
+                    DeviceName = cam_list[0];
+                    DeviceName = DeviceName[DeviceName.size()-1];
+                    filter_param.deviceID = DeviceName.toInt();
+                }
+                else
+                    return;
+            }
+            else
+                return;
+        }
+
+        char command[50];
+        sprintf(command,"v4l2-ctl -d %d -c exposure_auto=1",filter_param.deviceID);
+        system(command);
+        sprintf(command,"v4l2-ctl -d %d -c exposure_absolute=1",filter_param.deviceID);
+        system(command);
+        imagerd = cvQueryFrame( capture );
+        slider1->setValue(0);
+        slider2->setValue(0);
+        slider1->setEnabled(false);
+        slider2->setEnabled(false);
     }
 
     updatePrev();
@@ -142,7 +198,8 @@ void MainWindow::slider1_change(int value)
     treshold_1 = value;
     filter_param.frame_num = treshold_1;
     slider1_label->setText(QString("Start Frame = %1").arg(value));
-    updatePrev();
+    if (filter_param.input != TRM_INPUT_CAM)
+        updatePrev();
 }
 
 void MainWindow::slider2_change(int value)
@@ -154,11 +211,11 @@ void MainWindow::slider2_change(int value)
 void MainWindow::updatePrev()
 {
     IplImage *imagesrc;
-    if (!filter_param.isVideo)
+    if (filter_param.input == TRM_INPUT_IMAGE)
     {
         imagesrc = cvLoadImage(filter_param.filename.toLocal8Bit().data());
     }
-    else
+    else if (filter_param.input == TRM_INPUT_VIDEO)
     {
         if (capture == NULL)
             return;
@@ -166,6 +223,12 @@ void MainWindow::updatePrev()
         if (!cvGrabFrame( capture ))
             return;
         imagesrc = cvQueryFrame( capture );
+    }
+    else if (filter_param.input == TRM_INPUT_CAM)
+    {
+        pthread_cancel(thread_cam);
+        pthread_create( &thread_cam, NULL, camera_main, (void*) this);
+        return;
     }
     if (imagesrc == NULL)
     {
@@ -211,7 +274,7 @@ void MainWindow::open_clicked()
     filter_param.filename = QFileDialog::getOpenFileName(this, "Open File", "","Videos (*.mp4 *.avi *.mov *.mod)");
     if (!filter_param.filename.isEmpty())
     {
-        filter_param.isVideo = true;
+        filter_param.input = TRM_INPUT_VIDEO;
         capture = cvCreateFileCapture( filter_param.filename.toLocal8Bit().data() );
         if (capture == NULL)
             return;
@@ -228,23 +291,15 @@ void MainWindow::open_camera()
 {
     QStringList cam_list = getDeviceName();
     QString DeviceName = QInputDialog::getItem(this,"Select Camera","Camera",cam_list);
-    DeviceName = "/dev/" + DeviceName;
-    DeviceName.toLocal8Bit().data();
-    std::cout << DeviceName.toLocal8Bit().data() << std::endl;
-    int fd = open(DeviceName.toLocal8Bit().data(), O_RDWR);
-    //std::cout << fd << "\t" << EACCES << std::endl;
-    if ( fd < 0)
-    {
-        std::cout << "Cannot open camera" << std::endl;
+    filter_param.input = TRM_INPUT_CAM;  
+    capture = cvCreateCameraCapture(-1);
+    if (capture == NULL)
         return;
-    }
-    struct v4l2_input input;
-    memset(&input, 0, sizeof(input));
-    ioctl(fd, VIDIOC_G_INPUT, &(input.index)); //get index (Normally is 0)
-    ioctl(fd, VIDIOC_ENUMINPUT, &input);
-    std::cout << "Current input: " << input.index << std::endl;
-    ::close(fd);
-
+    QString command = "v4l2-ctl -d " + DeviceName + " -c exposure_auto=1";
+    system(command.toLocal8Bit().data());
+    command = "v4l2-ctl -d " + DeviceName + " -c exposure_absolute=1";
+    system(command.toLocal8Bit().data());
+    updatePrev();
 }
 
 void MainWindow::CreateMenu()
