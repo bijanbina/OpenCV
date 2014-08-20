@@ -337,6 +337,11 @@ void CalibrateWindow::state_change(int changed)
 		vslider1->setEnabled(false);
 		vslider2->setEnabled(false);
 	}
+//    else if (calibrate_state = TRM_STATE_MAHYAR)
+//    {
+//        CVScalar color[2];
+
+//    }
 	else
 	{
 		;

@@ -7,7 +7,7 @@ MainWindow::MainWindow(QWidget *parent) :
 		
 	//Actions
     connect(a_open, SIGNAL(triggered(bool)),this,SLOT(open_clicked()));
-    connect(a_save, SIGNAL(triggered(bool)),this,SLOT(save_clicked()));
+  //connect(a_save, SIGNAL(triggered(bool)),this,SLOT(save_clicked()));
     connect(a_exit, SIGNAL(triggered(bool)),this,SLOT(exit_clicked()));
     connect(slider1,SIGNAL(valueChanged(int)), this, SLOT(slider1_change(int)));
     connect(slider2,SIGNAL(valueChanged(int)), this, SLOT(slider2_change(int)));
@@ -15,7 +15,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	//Buttons
     connect(open_btn, SIGNAL(released()), this, SLOT(open_clicked()));
     connect(analysis_btn, SIGNAL(released()), this, SLOT(analysis_clicked()));
-    connect(save_btn, SIGNAL(released()), this, SLOT(save_clicked()));
+    connect(rec_btn, SIGNAL(released()), this, SLOT(rec_clicked()));
     connect(calibrate_btn, SIGNAL(released()), this, SLOT(calibrate_clicked()));
 
     loadVideo();
@@ -60,13 +60,19 @@ void MainWindow::exit_clicked()
 	close();
 }
 
-void MainWindow::save_clicked()
+void MainWindow::rec_clicked()
 {
-    file_name = QFileDialog::getSaveFileName(this, "Save File", "","").toLocal8Bit().data();
-    if (strcmp(file_name,"") && !imageView.isNull())
+    rec_window = new RecWindow();
+    rec_window->show();
+    if (rec_window->doAnalysis)
     {
-		QPixmap::fromImage(imageView).save(file_name,"PNG",100);
-	}
+        delete rec_window;
+        analysis_clicked();
+    }
+    else
+    {
+        delete rec_window;
+    }
 }
 
 void MainWindow::analysis_clicked()
@@ -258,11 +264,11 @@ void MainWindow::CreateLayout()
     open_btn = new QPushButton("Open");
     calibrate_btn = new QPushButton("Calibrate");
     analysis_btn = new QPushButton("Analysis");
-    save_btn = new QPushButton("Save");
+    rec_btn = new QPushButton("Record");
 	button_layout->addWidget(open_btn);
 	button_layout->addWidget(calibrate_btn);
 	button_layout->addWidget(analysis_btn);
-    button_layout->addWidget(save_btn);
+    button_layout->addWidget(rec_btn);
 
     //
     slider1_layout = new QHBoxLayout;

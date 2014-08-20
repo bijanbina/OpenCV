@@ -21,6 +21,7 @@
 #include <qwt_plot_spectrogram.h>
 #include <qwt_text_label.h>
 #include <iostream>
+#include "recwindow.h"
 
 #define prev_size 200.0
 
@@ -62,7 +63,7 @@ private slots:
     void open_clicked();
     void calibrate_clicked();
     void analysis_clicked();
-    void save_clicked();
+    void rec_clicked();
     void exit_clicked();
     void slider1_change(int);
     void slider2_change(int);
@@ -106,8 +107,9 @@ private:
     QPushButton  	*open_btn;
     QPushButton  	*calibrate_btn;
     QPushButton  	*analysis_btn;
-    QPushButton  	*save_btn;
+    QPushButton  	*rec_btn;
     CalibrateWindow *calibrate_window;
+    RecWindow       *rec_window;
 	QProgressBar	*progress;
 	QwtPlot			*xy_plot;
 	QwtPlot			*xt_plot;
