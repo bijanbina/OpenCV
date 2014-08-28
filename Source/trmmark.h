@@ -94,7 +94,7 @@ public:
 
 };
 trmMark *markFromImage(IplImage *imagesrc, trmParam data, bool *isAuto);
-trmMark *markFromMahyar (IplImage* image, trm_param pars, std::pair<double, double> &spot);
+trmMark *markFromMahyar (IplImage* image, trm_param pars);
 trmMark *create_from_point(CvSeq *points,double previous);
 trmMark *create_from_seq(CvSeq *head, double cornerMin, double treshold = -1 );
 

@@ -177,12 +177,11 @@ void MainWindow::updatePrev()
     {
         return;
     }
-    std::pair <double , double > spot;
     bool isAuto = false;
     trmMark *plus_obj;
     if (a_mahyar->isChecked())
     {
-        plus_obj = markFromMahyar(imagesrc,filter_param,spot);
+        plus_obj = markFromMahyar(imagesrc,filter_param);
     }
     else
     {
@@ -481,7 +480,7 @@ trmData *createTrmdata(CvCapture *capture,trmParam param,int startFrame,int endF
 		trmMark *plus_obj;
 		if (isMahyar)
 		{
-            plus_obj = markFromMahyar(imagesrc,param,spot);
+            plus_obj = markFromMahyar(imagesrc,param);
 		}
 		else
 		{

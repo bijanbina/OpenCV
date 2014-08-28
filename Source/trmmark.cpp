@@ -427,7 +427,7 @@ trmParam trmMark::Loadparam(char *filename)
             return_data.frame_num = json_obj.get("Start Frame Number",0).asInt();
             return_data.isVideo = json_obj.get("Is Video",true).asBool();
             return_data.deviceID = json_obj.get("Device ID",-1).asInt();
-            return_data.window = json_obj.get("Window",9999).asInt();
+            return_data.window = json_obj.get("Window",-1).asInt();
             return_data.filename = QStr_create(json_obj.get("File Address","../Resources/Sample.mp4").asString());
 
             const Json::Value HSV1 = json_obj["Color1"];

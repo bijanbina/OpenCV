@@ -101,7 +101,7 @@ void CalibrateIIWindow::state_change(int changed)
         if (!cvGrabFrame( capture ))
             return;
         imagesrc = cvQueryFrame( capture );
-        image = imagesrc;
+        image = cvCloneImage(imagesrc);
         imageView = QImage((const unsigned char*)(imagesrc->imageData), imagesrc->width,imagesrc->height,QImage::Format_RGB888).rgbSwapped();
         surface->setPixmap(QPixmap::fromImage(imageView.scaled(surface_width,surface_height,Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
         slider1->setMaximum(frames - 100);
@@ -136,9 +136,24 @@ void CalibrateIIWindow::state_change(int changed)
     }
     else if (calibrate_state == TRM_STATE_RESULT_II)
     {
+        trmParam temp_param = filter_param;
+        temp_param.window = treshold_1;
+        imgout = cvCloneImage(imagesrc);
+        trmMark *plus = markFromMahyar(imgout,temp_param);
 
+        imgout = cvCloneImage(imagesrc);
 
-        imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_Indexed8).rgbSwapped();
+        cv::RNG rng(1234);
+        CvScalar color = cvScalar(rng.uniform(0,255), rng.uniform(0, 255), rng.uniform(0, 255));
+
+        if (plus != NULL)
+        {
+            cv::Mat mat_temp = imgout;
+            cv::rectangle(mat_temp,plus->region,color,2,16);
+            delete plus;
+        }
+
+        imageView = QImage((const unsigned char*)(imgout->imageData), imgout->width,imgout->height,QImage::Format_RGB888).rgbSwapped();
         surface->setPixmap(QPixmap::fromImage(imageView.scaled(surface_width,surface_height,Qt::IgnoreAspectRatio,Qt::SmoothTransformation)));
     }
 }
@@ -324,9 +339,20 @@ void CalibrateIIWindow::next_clicked()
         color2_V->hide();
         color2_prev->hide();
         next_btn->setText("Finish");
+
+        slider1->setMaximum(imagesrc->width);
+        if ( filter_param.window == -1)
+        {
+            slider1->setValue(imagesrc->width);
+        }
+        else
+        {
+            slider1->setValue(filter_param.window);
+        }
     }
     else if (calibrate_state == TRM_STATE_RESULT_II)
     {
+        filter_param.window = treshold_1;
         trmMark::Saveparam(filter_param,SETTING_FILENAME);
         close();
     }
