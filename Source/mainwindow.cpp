@@ -12,6 +12,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(slider1,SIGNAL(valueChanged(int)), this, SLOT(slider1_change(int)));
     connect(slider2,SIGNAL(valueChanged(int)), this, SLOT(slider2_change(int)));
     connect(a_calibrate, SIGNAL(triggered(bool)),this,SLOT(calibrate_clicked()));
+    connect(a_mahyar, SIGNAL(triggered(bool)),this,SLOT(updatePrev()));
 	//Buttons
     connect(open_btn, SIGNAL(released()), this, SLOT(open_clicked()));
     connect(analysis_btn, SIGNAL(released()), this, SLOT(analysis_clicked()));
@@ -83,7 +84,7 @@ void MainWindow::analysis_clicked()
     int size = 0;
     if (videoLoaded)
     {
-        head = createTrmdata(capture,filter_param,treshold_1,treshold_2,progress,&size);
+        head = createTrmdata(capture,filter_param,treshold_1,treshold_2,progress,&size,a_mahyar->isChecked());
         std::cout << size << std::endl;
 //        double X[size];
 //        double Y[size];
@@ -176,12 +177,27 @@ void MainWindow::updatePrev()
     {
         return;
     }
-
+    std::pair <double , double > spot;
     bool isAuto = false;
-    trmMark *plus_obj = markFromImage(imagesrc,filter_param,&isAuto) ;
+    trmMark *plus_obj;
+    if (a_mahyar->isChecked())
+    {
+        plus_obj = markFromMahyar(imagesrc,filter_param,spot);
+    }
+    else
+    {
+        plus_obj = markFromImage(imagesrc,filter_param,&isAuto) ;
+    }
     if (plus_obj != NULL)
     {
-        cvSetImageROI(imagesrc, plus_obj->getRegion());
+        if (a_mahyar->isChecked())
+        {
+            cvSetImageROI(imagesrc, plus_obj->region);
+        }
+        else
+        {
+            cvSetImageROI(imagesrc, plus_obj->getRegion());
+        }
         IplImage *imgout  = cvCreateImage(cvGetSize(imagesrc), imagesrc->depth, imagesrc->nChannels);
         cvCopy(imagesrc, imgout, NULL);
         cvResetImageROI(imagesrc);
@@ -206,9 +222,20 @@ void MainWindow::updatePrev()
 
 void MainWindow::calibrate_clicked()
 {
-    calibrate_window = new CalibrateWindow(this);
-    filter_param = calibrate_window->start(filter_param.frame_num);
-    updatePrev();
+    if (a_mahyar->isChecked())
+    {
+        CalibrateIIWindow *calibrateii_window = new CalibrateIIWindow(this);
+        filter_param = calibrateii_window->start(filter_param.frame_num);
+        updatePrev();
+        delete calibrateii_window;
+    }
+    else
+    {
+        calibrate_window = new CalibrateWindow(this);
+        filter_param = calibrate_window->start(filter_param.frame_num);
+        updatePrev();
+        delete calibrate_window;
+    }
 }
 
 void MainWindow::open_clicked()
@@ -220,7 +247,7 @@ void MainWindow::open_clicked()
         capture = cvCreateFileCapture( filter_param.filename.toLocal8Bit().data() );
         if (capture == NULL)
             return;
-        trmMark::Saveparam(filter_param,"settings.json");
+        trmMark::Saveparam(filter_param,SETTING_FILENAME);
         slider2->setMaximum((int) cvGetCaptureProperty( capture, CV_CAP_PROP_FRAME_COUNT ));
         slider1->setMaximum((int) cvGetCaptureProperty( capture, CV_CAP_PROP_FRAME_COUNT ));
         videoLoaded = true;
@@ -241,9 +268,13 @@ void MainWindow::CreateMenu()
 
 	option_menu = menu->addMenu("Option");
 	a_calibrate = option_menu->addAction("Calibrate");
+    a_mahyar = option_menu->addAction("Mahyar");
 
 	help_menu = menu->addMenu("Help");
 	a_about = help_menu->addAction("About");
+
+    a_mahyar->setCheckable(true);
+    a_mahyar->setChecked(true);
 }
 
 void MainWindow::CreateLayout()
@@ -412,7 +443,8 @@ void MainWindow::CreateLayout()
     main_layout->addLayout(button_layout);
     //Side object
     NA_image = cvLoadImage("../Resources/NA.jpg");
-    filter_param = trmMark::Loadparam("settings.json");
+    filter_param = trmMark::Loadparam(SETTING_FILENAME);
+    //std::cout << filter_param.color[0][0] << filter_param.color[0][1] << filter_param.color[0][2]  << std::endl;
     videoLoaded = false;
     //Window
     Main_Widget->setLayout(main_layout);
@@ -422,9 +454,12 @@ void MainWindow::CreateLayout()
     //setLayoutDirection(Qt::RightToLeft);
 }
 
-trmData *createTrmdata(CvCapture *capture,trmParam param,int startFrame,int endFrame,QProgressBar *progress,int *size)
+//size: return by function as size of data
+//progress: update by function to show progress
+trmData *createTrmdata(CvCapture *capture,trmParam param,int startFrame,int endFrame,QProgressBar *progress,int *size,bool isMahyar)
 {
     trmData *head,*temp,*ptr;
+    std::pair <double,double> spot;
     head = new trmData;
     head->next = NULL;
     ptr = head;
@@ -443,7 +478,15 @@ trmData *createTrmdata(CvCapture *capture,trmParam param,int startFrame,int endF
         {
             break;
         }
-        trmMark *plus_obj = markFromImage(imagesrc,param,NULL) ;
+		trmMark *plus_obj;
+		if (isMahyar)
+		{
+            plus_obj = markFromMahyar(imagesrc,param,spot);
+		}
+		else
+		{
+			plus_obj = markFromImage(imagesrc,param,NULL) ;
+		}
         if (plus_obj != NULL)
         {
             temp = new trmData;

@@ -427,8 +427,24 @@ trmParam trmMark::Loadparam(char *filename)
             return_data.frame_num = json_obj.get("Start Frame Number",0).asInt();
             return_data.isVideo = json_obj.get("Is Video",true).asBool();
             return_data.deviceID = json_obj.get("Device ID",-1).asInt();
+            return_data.window = json_obj.get("Window",9999).asInt();
             return_data.filename = QStr_create(json_obj.get("File Address","../Resources/Sample.mp4").asString());
 
+            const Json::Value HSV1 = json_obj["Color1"];
+            if (!HSV1.empty())
+            {
+                return_data.color[0] = cv::Scalar(HSV1.get("Hue",100).asInt(),
+                                               HSV1.get("Saturation",100).asInt(),
+                                               HSV1.get("Value",100).asInt());
+            }
+
+            const Json::Value HSV2 = json_obj["Color2"];
+            if (!HSV2.empty())
+            {
+                return_data.color[1] = cv::Scalar(HSV2.get("Hue",100).asInt(),
+                                               HSV2.get("Saturation",100).asInt(),
+                                               HSV2.get("Value",100).asInt());
+            }
 
             const Json::Value edge = json_obj["Edge Detection"];
             if (!edge.empty())
@@ -465,8 +481,16 @@ void trmMark::Saveparam(trmParam data,char *filename)
 {
     Json::Value json_main;
     Json::Value edge;
+    Json::Value HSV1;
+    Json::Value HSV2;
     edge["Treshold 1"] = data.edge_1;
     edge["Treshold 2"] = data.edge_2;
+    HSV1["Hue"] = data.color[0][0];
+    HSV1["Saturation"] = data.color[0][1];
+    HSV1["Value"] = data.color[0][2];
+    HSV2["Hue"] = data.color[1][0];
+    HSV2["Saturation"] = data.color[1][1];
+    HSV2["Value"] = data.color[1][2];
     json_main["Erode"] = data.erode;
     json_main["Dilate"] = data.dilate;
     json_main["Bold"] = data.bold;
@@ -477,11 +501,14 @@ void trmMark::Saveparam(trmParam data,char *filename)
     json_main["File Address"] = data.filename.toUtf8().data();
     json_main["Start Frame Number"] = data.frame_num;
     json_main["Edge Detection"] = edge;
+    json_main["Color1"] = HSV1;
+    json_main["Color2"] = HSV2;
     json_main["Is Video"] = data.isVideo;
     json_main["Device ID"] = data.deviceID;
     json_main["Calibre Image Width"] = data.calibre_width;
     json_main["Morphology Algorithm"] = data.morph_algorithm;
     json_main["Maximum RMS Error"] = data.maximum_error;
+    json_main["Window"] = data.window;
     json_main["ROI CutOff"] = data.cutOff ;
 
     // write in a nice readible way
@@ -496,6 +523,7 @@ void trmMark::Saveparam(trmParam data,char *filename)
     file.close();
 }
 
+//imagesrc: rgb image
 trmMark *markFromImage(IplImage *imagesrc,trmParam filterParam,bool *isAuto)
 {
     IplImage *imgclone = cvCreateImage( cvGetSize(imagesrc), 8, 1 );

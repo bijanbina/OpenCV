@@ -9,9 +9,14 @@
 #include <iostream>
 #include <jsoncpp/json/json.h>
 #include <string.h>
+#include "Track.h"
 
 #define PI 3.14159265
 #define calib_prev_size 800.0
+#define MARK_EDGE_LENGHT 3.8
+#define MAHYAR_MARK_LENGHT 20
+
+#define SETTING_FILENAME "settings.json"
 
 #define MORPH_STATE_NORMALL     0
 #define MORPH_STATE_REVERSED    1
@@ -40,6 +45,11 @@ struct trm_param
     int deviceID;
 	int cutOff;
     QString filename;
+
+    //Mahyar
+    int window; //input from user
+    int circle_diameter; // input from user
+    cv::Scalar color[2]; // input from user
 };
 
 typedef trm_param trmParam;
@@ -76,6 +86,7 @@ public:
     CvPoint middle;
 
     CvPoint *rect;
+    CvRect   region;
     double   edge; //mean value of marks side
 	double   inside_edge;
     double   pr;//previeos angle
@@ -83,6 +94,7 @@ public:
 
 };
 trmMark *markFromImage(IplImage *imagesrc, trmParam data, bool *isAuto);
+trmMark *markFromMahyar (IplImage* image, trm_param pars, std::pair<double, double> &spot);
 trmMark *create_from_point(CvSeq *points,double previous);
 trmMark *create_from_seq(CvSeq *head, double cornerMin, double treshold = -1 );
 

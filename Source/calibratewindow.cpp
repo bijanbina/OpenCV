@@ -677,7 +677,7 @@ void CalibrateWindow::next_clicked()
             filter_param.maximum_error = treshold_1;
         else
             filter_param.maximum_error = -1;
-        trmMark::Saveparam(filter_param,"settings.json");
+        trmMark::Saveparam(filter_param,SETTING_FILENAME);
 		close();
 	}
 
@@ -875,7 +875,7 @@ void CalibrateWindow::CreateLayout(QWidget *parent)
 	main_layout->addLayout(button_layout);
 	//Side object
 	//file_name = "/home/bijan/Downloads/IMG_20140630_213804.jpg";
-    filter_param = trmMark::Loadparam("settings.json");
+    filter_param = trmMark::Loadparam(SETTING_FILENAME);
 	//default
 	treshold_1 = 0;
 	treshold_2 = 0;

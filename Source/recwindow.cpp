@@ -381,7 +381,7 @@ void RecWindow::CreateLayout(QWidget *parent)
     main_layout->addLayout(button_layout);
     //Side object
     //file_name = "/home/bijan/Downloads/IMG_20140630_213804.jpg";
-    filter_param = trmMark::Loadparam("settings.json");
+    filter_param = trmMark::Loadparam(SETTING_FILENAME);
     NA_image = cvLoadImage("../Resources/NA.jpg");
     //default
     treshold_1 = 0;

@@ -15,12 +15,16 @@ SOURCES += main.cpp\
         mainwindow.cpp\
 	calibratewindow.cpp \
     trmmark.cpp \
-    recwindow.cpp
+    recwindow.cpp \
+    calibrateiiwindow.cpp \
+    Track.cpp
 
 HEADERS  += mainwindow.h\
 	calibratewindow.h \
     trmmark.h \
-    recwindow.h
+    recwindow.h \
+    calibrateiiwindow.h \
+    Track.h
 
 PKGCONFIG += opencv jsoncpp
 CONFIG += link_pkgconfig

@@ -2,7 +2,6 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include "calibratewindow.h"
 #include <opencv/highgui.h>
 #include <QtWidgets>
 #include <cv.h>
@@ -22,6 +21,8 @@
 #include <qwt_text_label.h>
 #include <iostream>
 #include "recwindow.h"
+#include "calibratewindow.h"
+#include "calibrateiiwindow.h"
 
 #define prev_size 200.0
 
@@ -36,7 +37,7 @@ struct trm_data
 };
 typedef trm_data trmData;
 
-trmData *createTrmdata(CvCapture *capture, trmParam param, int startFrame, int endFrame, QProgressBar *progress, int *size);
+trmData *createTrmdata(CvCapture *capture, trmParam param, int startFrame, int endFrame, QProgressBar *progress, int *size, bool mahayar = false);
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -67,12 +68,12 @@ private slots:
     void exit_clicked();
     void slider1_change(int);
     void slider2_change(int);
+    void updatePrev();
 
 private:
     void CreateLayout();
 	void CreateMenu();
     void loadVideo();
-    void updatePrev();
     IplImage* doPyrDown( IplImage* in, int filter);
 
     QLabel       	*preview;
@@ -89,6 +90,7 @@ private:
 	QAction			*a_save;
 	QAction			*a_exit;
 	QAction			*a_calibrate;
+    QAction			*a_mahyar;
     QAction			*a_about;
     QVBoxLayout  	*main_layout;
     QLabel       	*radial_label;
