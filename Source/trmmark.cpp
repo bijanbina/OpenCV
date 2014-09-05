@@ -429,6 +429,7 @@ trmParam trmMark::Loadparam(char *filename)
             return_data.deviceID = json_obj.get("Device ID",-1).asInt();
             return_data.window = json_obj.get("Window",-1).asInt();
             return_data.filename = QStr_create(json_obj.get("File Address","../Resources/Sample.mp4").asString());
+            return_data.algorithm = json_obj.get("Algorithm",TRM_AUTO_SWITCH).asInt();
 
             const Json::Value HSV1 = json_obj["Color1"];
             if (!HSV1.empty())
@@ -472,6 +473,7 @@ trmParam trmMark::Loadparam(char *filename)
         return_data.deviceID = -1;
         return_data.calibre_width = calib_prev_size;
         return_data.morph_algorithm = MORPH_STATE_NORMALL;
+        return_data.algorithm = TRM_AUTO_SWITCH;
 
     }
     return return_data;
@@ -509,7 +511,8 @@ void trmMark::Saveparam(trmParam data,char *filename)
     json_main["Morphology Algorithm"] = data.morph_algorithm;
     json_main["Maximum RMS Error"] = data.maximum_error;
     json_main["Window"] = data.window;
-    json_main["ROI CutOff"] = data.cutOff ;
+    json_main["ROI CutOff"] = data.cutOff;
+    json_main["Algorithm"] = data.algorithm;
 
     // write in a nice readible way
     Json::StyledWriter styledWriter;

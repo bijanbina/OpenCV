@@ -371,6 +371,8 @@ void CalibrateIIWindow::calibrate_clicked()
         {
             slider2->setValue(mark->edge);
         }
+        filter_param.pixel2cm = mark->edge / MARK_EDGE_LENGHT;
+        trmMark::Saveparam(filter_param,SETTING_FILENAME);
     }
 }
 

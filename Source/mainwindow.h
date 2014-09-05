@@ -37,7 +37,7 @@ struct trm_data
 };
 typedef trm_data trmData;
 
-trmData *createTrmdata(CvCapture *capture, trmParam param, int startFrame, int endFrame, QProgressBar *progress, int *size, bool mahayar = false);
+trmData *createTrmdata(CvCapture *capture, trmParam param, int startFrame, int endFrame, QProgressBar *progress, int *size);
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -62,10 +62,14 @@ protected:
 
 private slots:
     void open_clicked();
+    void save_clicked();
     void calibrate_clicked();
     void analysis_clicked();
     void rec_clicked();
     void exit_clicked();
+    void bijan_clicked();
+    void mahyar_clicked();
+    void auto_clicked();
     void slider1_change(int);
     void slider2_change(int);
     void updatePrev();
@@ -88,9 +92,10 @@ private:
 	QAction			*a_open;
     QAction			*a_cam;
 	QAction			*a_save;
-	QAction			*a_exit;
-	QAction			*a_calibrate;
+    QAction			*a_exit;
+    QAction			*a_bijan;
     QAction			*a_mahyar;
+    QAction			*a_auto;
     QAction			*a_about;
     QVBoxLayout  	*main_layout;
     QLabel       	*radial_label;

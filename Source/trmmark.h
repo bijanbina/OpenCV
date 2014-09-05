@@ -15,6 +15,8 @@
 #define calib_prev_size 800.0
 #define MARK_EDGE_LENGHT 3.8
 #define MAHYAR_MARK_LENGHT 20
+#define MAHYAR_DIST_X 20
+#define MAHYAR_DIST_Y 20
 
 #define SETTING_FILENAME "settings.json"
 
@@ -22,6 +24,11 @@
 #define MORPH_STATE_REVERSED    1
 #define MORPH_STATE_OPEN        2
 #define MORPH_STATE_CLOSE       3
+
+
+#define TRM_ONLY_BIJAN 0
+#define TRM_ONLY_MAHYAR 1
+#define TRM_AUTO_SWITCH 2
 
 #define TRM_AUTO_SIZE   4
 #define TRM_AUTO_BOLD   { 0 , 1 , 2 , 1 }
@@ -44,12 +51,15 @@ struct trm_param
     int maximum_error;
     int deviceID;
 	int cutOff;
+    int algorithm; // bijan || mahyar || auto
     QString filename;
 
     //Mahyar
     int window; //input from user
     int circle_diameter; // input from user
+    double pixel2cm; // input from user
     cv::Scalar color[2]; // input from user
+
 };
 
 typedef trm_param trmParam;

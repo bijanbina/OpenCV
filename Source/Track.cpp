@@ -4,6 +4,9 @@
 using namespace cv;
 using namespace std;
 
+#define ZERO_MOSBAT 0.001
+#define ZERO_MANFI -0.001
+
 pair<double, double> last_spot(0,0) ;
 
 //Find the colored spot
@@ -85,6 +88,19 @@ Scalar find_region( Mat& frame, const pair<double, double>& spot, int w)
 	return Scalar( x, y, w );
 }
 
+Point2f convert_point(Point pt)
+{
+    Point2f return_data;
+    if (pt.x > 3000)
+    {
+        cout << "error on 96: spot value x: "
+             << last_spot.first << " y: " << last_spot.second << endl;
+    }
+    return_data.x = (float)pt.x;
+    return_data.y = (float)pt.y;
+    return return_data;
+}
+
 //Find center using fitLine and Canny
 pair<double, double> find_center( Mat& frame, Point& center )
 {
@@ -107,27 +123,29 @@ pair<double, double> find_center( Mat& frame, Point& center )
 	for( int i=0; i<contours.size(); i++ )
 	{
 		if( contours[i].size() < 20 )
-			contours.erase( contours.begin() + i );
+            contours.erase( contours.begin() + i );
     }
 	if( contours.size() != 4 )
+    {
+        cout << "Countor size :" << contours.size() << endl;
 		return pair<double, double> (-1, -1);
-
-    line1.reserve( contours[0].size() + contours[3].size() ); // preallocate memory
+    }
+//    line1.reserve( contours[0].size() + contours[3].size() ); // preallocate memory
 
     for( int i=0; i<contours[0].size(); i++ )
-        line1.push_back( cvPointTo32f(contours[0][i]));
+        line1.push_back(convert_point(contours[0][i]));
 
     for( int i=0; i<contours[3].size(); i++ )
-        line1.push_back( cvPointTo32f(contours[3][i]));
+        line1.push_back(convert_point(contours[3][i]));
 //    line1.insert( line1.end(), contours[0].begin(), contours[0].end() );
 //    line1.insert( line1.end(), contours[3].begin(), contours[3].end() );
 	
-    line2.reserve( contours[1].size() + contours[2].size() ); // preallocate memory
-    for( int i=0; i<contours[0].size(); i++ )
-        line2.push_back( cvPointTo32f(contours[1][i]));
+//    line2.reserve( (contours[1].size() + contours[2].size()) ); // preallocate memory
+    for( int i=0; i<contours[1].size(); i++ )
+        line2.push_back(convert_point(contours[1][i]));
 
     for( int i=0; i<contours[2].size(); i++ )
-        line2.push_back( cvPointTo32f(contours[2][i]));
+        line2.push_back(convert_point(contours[2][i]));
 
 
 //    line2.insert( line2.end(), contours[1].begin(), contours[1].end() );
@@ -137,8 +155,10 @@ pair<double, double> find_center( Mat& frame, Point& center )
 	fitLine( line2, l2, CV_DIST_L2, 0, 0.01, 0.01 );
 
 	double m1, m2, b1, b2, x, y;
-	if( !l1[0] )
+    if( l1[0] < ZERO_MOSBAT && l1[0] > ZERO_MANFI )
+    {
 		return pair<double, double> ( l1[2], l2[3] );
+    }
 	assert( l1[0] && l2[0] );
 	m1 = l1[1]/l1[0];
 	m2 = l2[1]/l2[0];
@@ -146,6 +166,31 @@ pair<double, double> find_center( Mat& frame, Point& center )
 	b2 = l2[3]-m2*l2[2];
 	x = (b1-b2)/(m2-m1);
 	y = m1*x + b1;
+    if ( x > 3000 || x < -3000)
+    {
+        cout << "L: " << l1[0] << "\t\t" << l1[1]
+             << "\t" << l2[0] << "\t" << l2[1]  << endl;
+        cout << "L2: " << l1[2] << "\t\t" << l1[3]
+             << "\t" << l2[2] << "\t" << l2[3]  << endl;
+        cout << "Data: " << m1 << "\t\t" << m2
+             << "\t" << b1 << "\t" << b2  << endl;
+
+        for ( int f = 0 ; f < line1.size() ; f++)
+        {
+            if (line1[f].x > 1000 || line1[f].x < -1000 )
+            {
+                cout << "line " << f << ":" << line1[f].x  << "," << line1[f].y << endl;
+            }
+        }
+
+        for ( int f = 0 ; f < line2.size() ; f++)
+        {
+            if (line2[f].x > 1000 || line2[f].x < -1000 )
+            {
+                cout << "line 2" << f << ":" << line2[f].x  << "," << line2[f].y << endl;
+            }
+        }
+    }
 	return pair<double, double> ( x, y );
 }
 
@@ -194,7 +239,10 @@ trmMark* markFromMahyar (IplImage* image, trm_param pars)
 	dilate( colorf_frame, colorf_frame, element );
 
     if( find_spot (colorf_frame, last_spot, window) < 0 )
+    {
+        cout << "error num -1" << endl;
         return NULL;
+    }
 
 	//CONTOURS AND CENTER DETECTION
     boundry = find_region( colorf_frame, last_spot, (MAHYAR_MARK_LENGHT * 10 * 0.8) );
@@ -202,7 +250,10 @@ trmMark* markFromMahyar (IplImage* image, trm_param pars)
     Point tempp = Point( last_spot.first-boundry[0], last_spot.second-boundry[1] );
     loc = find_center( region_frame, tempp );
 	if( loc.first < 0 )
+    {
+        cout << "error num -2:\tx:" << loc.first << "\ty: "<< loc.second << endl;
         return NULL;
+    }
 
 	loc.first += boundry[0];
 	loc.second += boundry[1];	

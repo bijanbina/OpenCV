@@ -7,12 +7,13 @@ MainWindow::MainWindow(QWidget *parent) :
 		
 	//Actions
     connect(a_open, SIGNAL(triggered(bool)),this,SLOT(open_clicked()));
-  //connect(a_save, SIGNAL(triggered(bool)),this,SLOT(save_clicked()));
+    connect(a_save, SIGNAL(triggered(bool)),this,SLOT(save_clicked()));
     connect(a_exit, SIGNAL(triggered(bool)),this,SLOT(exit_clicked()));
     connect(slider1,SIGNAL(valueChanged(int)), this, SLOT(slider1_change(int)));
     connect(slider2,SIGNAL(valueChanged(int)), this, SLOT(slider2_change(int)));
-    connect(a_calibrate, SIGNAL(triggered(bool)),this,SLOT(calibrate_clicked()));
-    connect(a_mahyar, SIGNAL(triggered(bool)),this,SLOT(updatePrev()));
+    connect(a_auto, SIGNAL(triggered(bool)),this,SLOT(auto_clicked()));
+    connect(a_mahyar, SIGNAL(triggered(bool)),this,SLOT(mahyar_clicked()));
+    connect(a_bijan, SIGNAL(triggered(bool)),this,SLOT(bijan_clicked()));
 	//Buttons
     connect(open_btn, SIGNAL(released()), this, SLOT(open_clicked()));
     connect(analysis_btn, SIGNAL(released()), this, SLOT(analysis_clicked()));
@@ -61,6 +62,30 @@ void MainWindow::exit_clicked()
 	close();
 }
 
+void MainWindow::auto_clicked()
+{
+    a_mahyar->setChecked(false);
+    a_bijan->setChecked(false);
+    filter_param.algorithm = TRM_AUTO_SWITCH;
+    updatePrev();
+}
+
+void MainWindow::mahyar_clicked()
+{
+    a_auto->setChecked(false);
+    a_bijan->setChecked(false);
+    filter_param.algorithm = TRM_ONLY_MAHYAR;
+    updatePrev();
+}
+
+void MainWindow::bijan_clicked()
+{
+    a_auto->setChecked(false);
+    a_mahyar->setChecked(false);
+    filter_param.algorithm = TRM_ONLY_BIJAN;
+    updatePrev();
+}
+
 void MainWindow::rec_clicked()
 {
     rec_window = new RecWindow();
@@ -84,12 +109,8 @@ void MainWindow::analysis_clicked()
     int size = 0;
     if (videoLoaded)
     {
-        head = createTrmdata(capture,filter_param,treshold_1,treshold_2,progress,&size,a_mahyar->isChecked());
+        head = createTrmdata(capture,filter_param,treshold_1,treshold_2,progress,&size);
         std::cout << size << std::endl;
-//        double X[size];
-//        double Y[size];
-//        double T[size];
-//        double V[size];
         QVector< double > X(size);
         QVector< double > Y(size);
         QVector< double > T(size);
@@ -103,12 +124,13 @@ void MainWindow::analysis_clicked()
                 break;
             X[i] = ptr->x;
             Y[i] = ptr->y;
-            T[i] = i;
+            T[i] = ptr->frameNum;
+
             if (i)
                 V[i] = cvSqrt((X[i] - last_x) * (X[i] - last_x) + (Y[i] - last_y) * (Y[i] - last_y) );
             last_x = X[i];
             last_y = Y[i];
-			ptr_prev = ptr;
+            ptr_prev = ptr;
             ptr = ptr->next;
 			delete ptr_prev;
         }
@@ -178,6 +200,7 @@ void MainWindow::updatePrev()
         return;
     }
     bool isAuto = false;
+    bool isSwitch = false; //toggle on if use mahyar algorithm in auto mode
     trmMark *plus_obj;
     if (a_mahyar->isChecked())
     {
@@ -186,10 +209,15 @@ void MainWindow::updatePrev()
     else
     {
         plus_obj = markFromImage(imagesrc,filter_param,&isAuto) ;
+        if (plus_obj == NULL && a_auto->isChecked())
+        {
+            plus_obj = markFromMahyar(imagesrc,filter_param);
+            isSwitch = true;
+        }
     }
     if (plus_obj != NULL)
     {
-        if (a_mahyar->isChecked())
+        if (a_mahyar->isChecked() || isSwitch)
         {
             cvSetImageROI(imagesrc, plus_obj->region);
         }
@@ -255,6 +283,15 @@ void MainWindow::open_clicked()
 
 }
 
+void MainWindow::save_clicked()
+{
+    filter_param.filename = QFileDialog::getOpenFileName(this, "Save File", "","data (*.dat)");
+    if (!filter_param.filename.isEmpty())
+    {
+
+    }
+}
+
 void MainWindow::CreateMenu()
 {
     menu = new QMenuBar (this);
@@ -265,15 +302,30 @@ void MainWindow::CreateMenu()
 	a_save = file_menu->addAction("Save");
 	a_exit = file_menu->addAction("Exit");
 
-	option_menu = menu->addMenu("Option");
-	a_calibrate = option_menu->addAction("Calibrate");
-    a_mahyar = option_menu->addAction("Mahyar");
+    option_menu = menu->addMenu("Option");
+    a_mahyar = option_menu->addAction("Only Mahyar");
+    a_bijan = option_menu->addAction("Only Bijan");
+    a_auto = option_menu->addAction("Auto switch");
 
 	help_menu = menu->addMenu("Help");
 	a_about = help_menu->addAction("About");
 
+    a_bijan->setCheckable(true);
     a_mahyar->setCheckable(true);
-    a_mahyar->setChecked(true);
+    a_auto->setCheckable(true);
+
+    if (filter_param.algorithm == TRM_AUTO_SWITCH)
+    {
+        a_auto->setChecked(true);
+    }
+    else if (filter_param.algorithm == TRM_ONLY_MAHYAR)
+    {
+        a_mahyar->setChecked(true);
+    }
+    else if (filter_param.algorithm == TRM_ONLY_BIJAN)
+    {
+        a_bijan->setChecked(true);
+    }
 }
 
 void MainWindow::CreateLayout()
@@ -281,6 +333,7 @@ void MainWindow::CreateLayout()
     main_layout = new QVBoxLayout;
     Main_Widget = new QWidget;
 
+    filter_param = trmMark::Loadparam(SETTING_FILENAME);
 	CreateMenu();
 
     option_layout = new QHBoxLayout;
@@ -442,7 +495,6 @@ void MainWindow::CreateLayout()
     main_layout->addLayout(button_layout);
     //Side object
     NA_image = cvLoadImage("../Resources/NA.jpg");
-    filter_param = trmMark::Loadparam(SETTING_FILENAME);
     //std::cout << filter_param.color[0][0] << filter_param.color[0][1] << filter_param.color[0][2]  << std::endl;
     videoLoaded = false;
     //Window
@@ -455,10 +507,10 @@ void MainWindow::CreateLayout()
 
 //size: return by function as size of data
 //progress: update by function to show progress
-trmData *createTrmdata(CvCapture *capture,trmParam param,int startFrame,int endFrame,QProgressBar *progress,int *size,bool isMahyar)
+//mode: can be auto,only bijan,only mahar
+trmData *createTrmdata(CvCapture *capture,trmParam param,int startFrame,int endFrame,QProgressBar *progress,int *size)
 {
     trmData *head,*temp,*ptr;
-    std::pair <double,double> spot;
     head = new trmData;
     head->next = NULL;
     ptr = head;
@@ -478,7 +530,7 @@ trmData *createTrmdata(CvCapture *capture,trmParam param,int startFrame,int endF
             break;
         }
 		trmMark *plus_obj;
-		if (isMahyar)
+        if (param.algorithm == TRM_ONLY_MAHYAR)
 		{
             plus_obj = markFromMahyar(imagesrc,param);
 		}
@@ -486,11 +538,12 @@ trmData *createTrmdata(CvCapture *capture,trmParam param,int startFrame,int endF
 		{
 			plus_obj = markFromImage(imagesrc,param,NULL) ;
 		}
-        if (plus_obj != NULL)
+        if (plus_obj != NULL && (plus_obj->middle.x < 3000 && plus_obj->middle.y < 3000))
         {
             temp = new trmData;
             temp->x = plus_obj->middle.x;
             temp->y = plus_obj->middle.y;
+            temp->frameNum = frameNumber;
             temp->next = NULL;
             ptr->next = temp;
             ptr = ptr->next;

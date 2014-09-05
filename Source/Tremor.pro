@@ -29,7 +29,7 @@ HEADERS  += mainwindow.h\
 PKGCONFIG += opencv jsoncpp
 CONFIG += link_pkgconfig
 
-INCLUDEPATH      += /usr/include/qwt
+INCLUDEPATH      += /usr/lib/include/qwt
 LIBS        += -lqwt -lm -lpthread
 QMAKE_CXXFLAGS += -g
 #QMAKE_CXXFLAGS += -E
